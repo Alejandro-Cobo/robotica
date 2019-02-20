@@ -1,4 +1,4 @@
-# Robotica2019
+# Práctica de Robótica y percepción computacional
 
 Presentación de la práctica: https://moodle.upm.es/titulaciones/oficiales/pluginfile.php/1606974/mod_resource/content/6/2019-01-29-presentacionPractica.pdf
 
