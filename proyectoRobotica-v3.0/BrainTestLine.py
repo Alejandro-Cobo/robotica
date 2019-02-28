@@ -3,21 +3,9 @@ from pyrobot.brain import Brain
 import math
 
 class BrainTestNavigator(Brain):
- 
-  NO_FORWARD = 0
-  SLOW_FORWARD = 0.1
-  MED_FORWARD = 0.5
-  FULL_FORWARD = 1.0
-
-  NO_TURN = 0
-  MED_LEFT = 0.5
-  HARD_LEFT = 1.0
-  MED_RIGHT = -0.5
-  HARD_RIGHT = -1.0
-
-  NO_ERROR = 0
-
   last_error = 0
+  avoid = False
+  buscar_linea = True
 
   def setup(self):
     pass
@@ -25,23 +13,41 @@ class BrainTestNavigator(Brain):
   def step(self):
     hasLine,lineDistance,searchRange = eval(self.robot.simulation[0].eval("self.getLineProperties()"))
     print "I got from the simulation",hasLine,lineDistance,searchRange
+   
+    # Search for a line
+    if hasLine:
+       self.buscar_linea = False
+    if self.buscar_linea:
+       self.move(0.5,0)
+       return      
 
-    if (hasLine):
-      kd = (lineDistance/searchRange)/8
+    # Avoid obstacles
+    front = min([s.distance() for s in self.robot.range["front"]])
+    if front < 0.5:
+       self.avoid = True
+       self.move(0, 0.5)
+    if self.avoid:
+       if self.robot.range[5].distance() < 0.5:
+          self.move(0,0.5)
+       elif self.robot.range[6].distance() < 0.5:
+          self.move(0.3,0.3)
+       elif self.robot.range[7].distance() < 0.5:
+          if hasLine:
+             self.avoid = False
+          self.move(0.3,-0.5)
+       elif self.robot.range[7].distance() > 0.5 and self.robot.range[7].distance() < 0.8:
+          self.move(0.3,-0.3)
+
+    # Follow the line:
+    if ( hasLine and not(self.avoid) ):
+      kd = (lineDistance/searchRange) / 8
       d = (lineDistance - self.last_error) / searchRange
       self.last_error = lineDistance
       tv = (lineDistance/searchRange) + kd*d
-      fv = max(0, 1-abs(tv*1.5))
+      fv = max( 0, 1-abs(tv*1.5) - abs(d) )
       self.move(fv, tv)
-#      if (lineDistance > self.NO_ERROR):
-#        self.move(self.FULL_FORWARD,self.HARD_LEFT)
-#      elif (lineDistance < self.NO_ERROR):
-#        self.move(self.FULL_FORWARD,self.HARD_RIGHT)
-#      else:
-#        self.move(self.FULL_FORWARD,self.NO_TURN)
-    else:
-      # if we can't find the line we just stop, this isn't very smart
-      self.move(self.NO_FORWARD,self.NO_TURN)
+    elif ( not(hasLine) and not(self.avoid) ):
+      self.move( 0, max(0.5, min(1,self.last_error)) )
  
 def INIT(engine):
   assert (engine.robot.requires("range-sensor") and
