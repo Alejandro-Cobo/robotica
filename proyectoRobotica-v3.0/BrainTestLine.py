@@ -5,24 +5,28 @@ import math
 class BrainTestNavigator(Brain):
   last_error = 0
   avoid = False
-  buscar_linea = True
+  search_line = True
 
   def setup(self):
     pass
 
   def step(self):
     hasLine,lineDistance,searchRange = eval(self.robot.simulation[0].eval("self.getLineProperties()"))
-    print "I got from the simulation",hasLine,lineDistance,searchRange
-   
+    print "I got from the simulation",hasLine,lineDistance,searchRange,self.last_error
+
+    front = min([s.distance() for s in self.robot.range["front"]])   
+
     # Search for a line
     if hasLine:
-       self.buscar_linea = False
-    if self.buscar_linea:
-       self.move(0.5,0)
+       self.search_line = False
+    if self.search_line:
+       if front < 0.5 or self.robot.range[5].distance() < 0.5 or self.robot.range[6].distance() < 0.5:
+          self.move(1,0)
+       else:
+          self.move(0.5,0)
        return      
 
     # Avoid obstacles
-    front = min([s.distance() for s in self.robot.range["front"]])
     if front < 0.5:
        self.avoid = True
        self.move(0, 0.5)
@@ -47,7 +51,7 @@ class BrainTestNavigator(Brain):
       fv = max( 0, 1-abs(tv*1.5) - abs(d) )
       self.move(fv, tv)
     elif ( not(hasLine) and not(self.avoid) ):
-      self.move( 0, max(0.5, min(1,self.last_error)) )
+      self.move(0, self.last_error / searchRange)
  
 def INIT(engine):
   assert (engine.robot.requires("range-sensor") and
