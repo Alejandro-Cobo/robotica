@@ -2,25 +2,31 @@ import cv2
 from scipy.misc import imread, imsave
 from matplotlib import pyplot as plt
 import select_pixels as sel
-
+import sys
 
 # Abres el video / camara con
-
-capture = cv2.VideoCapture()
+video = sys.argv[1]
+if video == None:
+    capture = cv2.VideoCapture()
+else:
+    capture = cv2.VideoCapture(video)
 
 # Lees las imagenes y las muestras para elegir la(s) de entrenamiento
 # posibles funciones a usar
 
-cv2.waitKey()
-capture.read()
-cv2.imshow()
+key = 0
+
+while key != ord('q'):
+    ret, imNp = capture.read()
+    cv2.imshow('Captura',imNp)
+    key = cv2.waitKey(10)
 
 capture.release()
 cv2.destroyWindow("Captura")
 
 # Si deseas mostrar la imagen con funciones de matplotlib posiblemente haya que cambiar
 # el formato, con
-cv2.cvtColor(<img>, ...)
+imNp = cv2.cvtColor(imNp, cv2.COLOR_BGR2RGB)
 
 # Esta funcion del paquete "select_pixels" pinta los pixeles en la imagen 
 # Puede ser util para el entrenamiento
@@ -32,6 +38,6 @@ plt.imshow(markImg)
 plt.show()
 
 # Si deseas guardar alguna imagen ....
-
+imsave('linea.png',imNp)
 imsave('lineaMarcada.png',markImg)
 

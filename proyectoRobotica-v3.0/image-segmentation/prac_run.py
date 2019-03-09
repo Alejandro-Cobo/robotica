@@ -11,36 +11,30 @@ from scipy.misc import imread, imsave
 from matplotlib import pyplot as plt
 import numpy as np
 
-#import clasif as cl
+import classif as seg
 
 
 # Leo las imagenes de entrenamiento
 imNp = imread('linea.png')
 markImg = imread('lineaMarcada.png')
 
-
 # saco todos los puntos marcados en rojo/verde/azul
 data_marca=imNp[np.where(np.all(np.equal(markImg,(255,0,0)),2))]
 data_fondo=imNp[np.where(np.all(np.equal(markImg,(0,255,0)),2))]
 data_linea=imNp[np.where(np.all(np.equal(markImg,(0,0,255)),2))]
 
-
-
 # Creo y entreno los segmentadores euclideos
 segmEuc = seg.segEuclid([data_fondo, data_linea, data_marca])
-segmMano = seg.segMano2()
-
-
+segmMano = seg.segMano2([data_fondo, data_linea, data_marca])
 
 # Inicio la captura de imagenes
-capture = cv2.VideoCapture(...)
+capture = cv2.VideoCapture("video1.mp4")
 
 # Ahora clasifico el video
-while ():
+while (cv2.waitKey(1) != ord('q')):
     # voy a segmentar solo una de cada 25 imagenes y la muestro
-    ........
+    ret, img = capture.read()
     cv2.imshow("Imagen",img)
-
     # La pongo en formato numpy
 
     # Segmento la imagen.
