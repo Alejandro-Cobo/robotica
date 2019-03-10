@@ -18,5 +18,5 @@ Si no existen permisos de ejecución, utilizar el comando:
 ```
 chmod a+x runTestLineSim
 ```
-## Tutorial de git en linux
+## Tutorial de git
 http://rogerdudler.github.io/git-guide/
