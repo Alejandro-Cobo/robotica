@@ -25,34 +25,37 @@ data_linea=imNp[np.where(np.all(np.equal(markImg,(0,0,255)),2))]
 
 # Creo y entreno los segmentadores euclideos
 segmEuc = seg.segEuclid([data_fondo, data_linea, data_marca])
-#segmMano = seg.segMano([data_fondo, data_linea, data_marca])
+# segmMano = seg.segMano([data_fondo, data_linea, data_marca])
 
 # Inicio la captura de imagenes
 capture = cv2.VideoCapture("video1.mp4")
 
 # Ahora clasifico el video
 key = 0
-cont = -1
+count = 0
+im_count = 1
 while key != ord('q'):
     # voy a segmentar solo una de cada 25 imagenes y la muestro
-    cont = (cont+1)%25
-    key = cv2.waitKey(10)
+    key = cv2.waitKey(1)
     ret, img = capture.read()
-    if ret and cont == 0:
-        cv2.imshow("Imagen",img)
-    if cont != 0:
+    
+    if count%25 != 0:
+        count += 1
         continue
+        
     if not ret:
         break
+        
+    cv2.imshow("Imagen",img)
+    
 
     # La pongo en formato numpy
     imNp = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     # Segmento la imagen.
     # Compute rgb normalization
-    imrgbn=np.rollaxis((np.rollaxis(imNp,2)+0.0)/np.sum(imNp,2),0,3)[:,:,:2]
+    imrgbn = np.rollaxis((np.rollaxis(imNp,2)+0.0)/np.sum(imNp,2),0,3)[:,:,:2]
 
-    labelsEu=segmEuc.segmenta(imNp)
-    labelsEun=segmEuc.segmenta(imrgbn)
+    labelsEu=segmEuc.segmenta(imrgbn)
     # labelsMa=segmMano.segmenta(imNp)
 
 
@@ -61,16 +64,18 @@ while key != ord('q'):
     paleta = np.array([[0,0,0],[0,0,255],[255,0,0],[0,255,0]],dtype=np.uint8)
     # ahora pinto la imagen
     cv2.imshow("Segmentacion Euclid",cv2.cvtColor(paleta[labelsEu],cv2.COLOR_RGB2BGR))
-    cv2.imshow("Segmentacion Euclid norm",cv2.cvtColor(paleta[labelsEun],cv2.COLOR_RGB2BGR))
     # cv2.imshow("Segmentacion Mano",cv2.cvtColor(paleta[labelsMa],cv2.COLOR_RGB2BGR))
-"""
+
     # Para pintar texto en una imagen
-    cv2.putText(imDraw,'Lineas: {0}'.format(len(convDefsLarge)),(15,20),cv2.FONT_HERSHEY_PLAIN,1,(255,0,0))
+    # cv2.putText(imDraw,'Lineas: {0}'.format(len(convDefsLarge)),(15,20),cv2.FONT_HERSHEY_PLAIN,1,(255,0,0))
     # Para pintar un circulo en el centro de la imagen
-    cv2.circle(imDraw, (imDraw.shape[1]/2,imDraw.shape[0]/2), 2, (0,255,0), -1)
+    # cv2.circle(imDraw, (imDraw.shape[1]/2,imDraw.shape[0]/2), 2, (0,255,0), -1)
 
     # Guardo esta imagen para luego con todas ellas generar un video
+    cv2.imwrite("frames/frame%02d.jpg" % im_count, cv2.cvtColor(paleta[labelsEu], cv2.COLOR_BGR2RGB))
+    count += 1
+    im_count += 1
 
-    cv2.imwrite
-"""
+capture.release()
+cv2.destroyAllWindows()
 

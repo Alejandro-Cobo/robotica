@@ -11,6 +11,7 @@ class Classifier:
     def segmenta(self):
         pass
 
+
 class segEuclid(Classifier):
     def __init__(self, data):
         self.labels = np.array(range(len(data)))
@@ -24,29 +25,27 @@ class segEuclid(Classifier):
             Z = ((self.Z+0.0).T/np.sum(self.Z,axis=1)).T[:,:2]
         else:
             Z = self.Z
-        return X.dot(Z.T) - 0.5*np.sum(Z**2, axis=1)
+        return X.dot(Z.T) - 0.5*np.sum(np.power(Z,2), axis=1)
 
     def segmenta(self, X):
-        return self.labels[np.argmax(self.predict(X), axis=-1)]
+        return self.labels[np.argmax(self.predict(X), axis=2)]
+
 
 class segMano(Classifier):
     def __init__(self, data):
         self.labels = np.array(range(len(data)))
         self.Z = np.zeros(shape=(len(self.labels),3))
+        self.invCov = np.zeros(shape=(len(self.labels),3,3))
         for i in range(len(self.labels)):
+            self.invCov[:,:,i] = np.linalg.inv( np.cov(data[i], rowvar=False, ddof=1) )
             self.Z[i] = np.mean(data[i], axis=0)
         pass
 
     def predict(self, X):
-        res = np.zeros(shape=X.shape)
-        for i in range(X.shape[0]):
-            for j in range(X.shape[1]):
-                for k in range(X.shape[2]):
-                    u = X[i,j,:]
-                    v = self.Z[k]
-                    VI = np.linalg.pinv(np.cov(np.array([u,v]).T))
-                    res[i,j,k] = distance.mahalanobis(u,v,VI)
-        return res
+        R = np.zeros(X.shape)
+        for i in range(len(self.labels)):
+            R[:,:,i] = np.power(X-self.Z[i],2).dot(self.invCov[i])
+        return R
             
     def segmenta(self, X):
-        return self.labels[np.argmax(self.predict(X), axis=-1)]
+        return self.labels[np.argmin(self.predict(X), axis=2)]
