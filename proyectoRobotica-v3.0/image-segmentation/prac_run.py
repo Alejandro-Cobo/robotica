@@ -32,6 +32,8 @@ end = time.time()
 print("Tiempo de entrenamiento: " + str(end-start))
 # Inicio la captura de imagenes
 capture = cv2.VideoCapture("video1.mp4")
+fourcc = cv2.cv.CV_FOURCC(*'XVID')
+out = cv2.VideoWriter('video_segmentado.avi', fourcc, 100/25, (320,240))
 
 # Ahora clasifico el video
 key = 0
@@ -80,10 +82,12 @@ while key != ord('q'):
     # cv2.circle(imDraw, (imDraw.shape[1]/2,imDraw.shape[0]/2), 2, (0,255,0), -1)
 
     # Guardo esta imagen para luego con todas ellas generar un video
-    cv2.imwrite("frames/frame%02d.jpg" % im_count, cv2.cvtColor(paleta[labelsEu], cv2.COLOR_BGR2RGB))
+    # cv2.imwrite("frames/frame%02d.jpg" % im_count, cv2.cvtColor(paleta[labelsEu], cv2.COLOR_BGR2RGB))
+    out.write(cv2.cvtColor(paleta[labelsEu], cv2.COLOR_BGR2RGB))
     count += 1
     im_count += 1
     
 capture.release()
+out.release()
 cv2.destroyAllWindows()
 
