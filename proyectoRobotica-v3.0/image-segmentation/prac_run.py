@@ -13,6 +13,7 @@ import numpy as np
 
 import classif as seg
 
+import time
 
 # Leo las imagenes de entrenamiento
 imNp = imread('linea.png')
@@ -24,9 +25,11 @@ data_fondo=imNp[np.where(np.all(np.equal(markImg,(0,255,0)),2))]
 data_linea=imNp[np.where(np.all(np.equal(markImg,(0,0,255)),2))]
 
 # Creo y entreno los segmentadores euclideos
+start = time.time()
 segmEuc = seg.segEuclid([data_fondo, data_linea, data_marca])
 # segmMano = seg.segMano([data_fondo, data_linea, data_marca])
-
+end = time.time()
+print("Tiempo de entrenamiento: " + str(end-start))
 # Inicio la captura de imagenes
 capture = cv2.VideoCapture("video1.mp4")
 
@@ -51,13 +54,18 @@ while key != ord('q'):
 
     # La pongo en formato numpy
     imNp = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
     # Segmento la imagen.
     # Compute rgb normalization
+    if count == 0:
+        start = time.time()
     imrgbn = np.rollaxis((np.rollaxis(imNp,2)+0.0)/np.sum(imNp,2),0,3)[:,:,:2]
 
     labelsEu=segmEuc.segmenta(imrgbn)
     # labelsMa=segmMano.segmenta(imNp)
-
+    if count == 0:
+        end = time.time()
+        print("Tiempo de segmentacion: " +str(end-start))
 
     # Vuelvo a pintar la imagen
     # genero la paleta de colores
@@ -75,7 +83,7 @@ while key != ord('q'):
     cv2.imwrite("frames/frame%02d.jpg" % im_count, cv2.cvtColor(paleta[labelsEu], cv2.COLOR_BGR2RGB))
     count += 1
     im_count += 1
-
+    
 capture.release()
 cv2.destroyAllWindows()
 
