@@ -15,8 +15,8 @@ import classif as seg
 import time
 
 # Leo las imagenes de entrenamiento
-imNp = imread('linea.png')
-markImg = imread('lineaMarcada.png')
+imNp = imread('imgs/linea.png')
+markImg = imread('imgs/lineaMarcada.png')
 
 # saco todos los puntos marcados en rojo/verde/azul
 data_marca=imNp[np.where(np.all(np.equal(markImg,(255,0,0)),2))]
@@ -38,10 +38,10 @@ end = time.time()
 print("Tiempo de entrenamiento: " + str(end-start))
 
 # Inicio la captura de imagenes
-capture = cv2.VideoCapture("video1.mp4")
+capture = cv2.VideoCapture("videos/video2017-3.avi")
 
 fourcc = cv2.cv.CV_FOURCC(*'XVID')
-out = cv2.VideoWriter('video_segmentado.avi', fourcc, 100/25, (320,240))
+out = cv2.VideoWriter('vidoes/video_segmentado.avi', fourcc, 100/25, (320,240))
 
 # Ahora clasifico el video
 count = 0

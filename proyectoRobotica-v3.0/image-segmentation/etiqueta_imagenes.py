@@ -38,6 +38,6 @@ plt.imshow(markImg)
 plt.show()
 
 # Si deseas guardar alguna imagen ....
-imsave('linea.png',imNp)
-imsave('lineaMarcada.png',markImg)
+imsave('imgs/linea_test.png',imNp)
+imsave('imgs/lineaMarcada_test.png',markImg)
 
