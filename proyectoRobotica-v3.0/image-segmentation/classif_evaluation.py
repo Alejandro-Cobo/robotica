@@ -2,7 +2,7 @@
 import cv, cv2
 from scipy.misc import imread, imsave
 import numpy as np
-from sklearn import cross_validation as cv
+
 import time
 
 import classif as cl
@@ -40,7 +40,7 @@ print("\t-- Tiempo de entrenamiento: " + str((end-start)))
 start = time.time()
 res = seg.segmenta(dataTe)
 end = time.time()
-print("\t-- Tiempo de entrenamiento: " + str((end-start)))
+print("\t-- Tiempo de segmentación: " + str((end-start)))
 acierto = (np.sum(res == labelsTe)+0.0) / labelsTe.shape[0]
 print("\t-- Tasa de acierto: " + str(acierto))
 
