@@ -26,7 +26,7 @@ def get_data_labels(im_filename, mark_filename):
 
 # Se crean los datasets de entrenamiento y test
 dataTr, labelsTr = get_data_labels("imgs/linea.png", "imgs/lineaMarcada.png")
-dataTe, labelsTe = get_data_labels("imgs/linea_test.png","imgs/lineaMarcada_test.png")
+dataTe, labelsTe = get_data_labels("imgs/linea2.png","imgs/lineaMarcada2.png")
 
 ############# CLASIFICADOR EUCLÍDEO #############
 # ENTRENAMIENTO
@@ -44,13 +44,44 @@ print("\t-- Tiempo de segmentación: " + str((end-start)))
 acierto = (np.sum(res == labelsTe)+0.0) / labelsTe.shape[0]
 print("\t-- Tasa de acierto: " + str(acierto))
 
-
 ############# CLASIFICADOR KNN #############
 # ENTRENAMIENTO
 start = time.time()
 seg = cl.segKNN(dataTr, labelsTr)
 end = time.time()
 print("- Clasificador KNN")
+print("\t-- Tiempo de entrenamiento: " + str((end-start)))
+
+# TEST 
+start = time.time()
+res = seg.segmenta(dataTe)
+end = time.time()
+print("\t-- Tiempo de segmentación: " + str((end-start)))
+acierto = (np.sum(res == labelsTe)+0.0) / labelsTe.shape[0]
+print("\t-- Tasa de acierto: " + str(acierto))
+
+############# CLASIFICADOR GNB #############
+# ENTRENAMIENTO
+start = time.time()
+seg = cl.segGNB(dataTr, labelsTr)
+end = time.time()
+print("- Clasificador GNB")
+print("\t-- Tiempo de entrenamiento: " + str((end-start)))
+
+# TEST 
+start = time.time()
+res = seg.segmenta(dataTe)
+end = time.time()
+print("\t-- Tiempo de segmentación: " + str((end-start)))
+acierto = (np.sum(res == labelsTe)+0.0) / labelsTe.shape[0]
+print("\t-- Tasa de acierto: " + str(acierto))
+
+############# CLASIFICADOR QDA #############
+# ENTRENAMIENTO
+start = time.time()
+seg = cl.segQDA(dataTr, labelsTr)
+end = time.time()
+print("- Clasificador QDA")
 print("\t-- Tiempo de entrenamiento: " + str((end-start)))
 
 # TEST 
