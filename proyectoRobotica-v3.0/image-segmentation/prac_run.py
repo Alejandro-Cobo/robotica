@@ -23,10 +23,17 @@ data_marca=imNp[np.where(np.all(np.equal(markImg,(255,0,0)),2))]
 data_fondo=imNp[np.where(np.all(np.equal(markImg,(0,255,0)),2))]
 data_linea=imNp[np.where(np.all(np.equal(markImg,(0,0,255)),2))]
 
+labels_marca = np.zeros(data_marca.shape[0],np.int8) + 2
+labels_fondo = np.zeros(data_fondo.shape[0],np.int8)
+labels_linea = np.ones(data_linea.shape[0],np.int8)
+
+data = np.concatenate([data_marca, data_fondo, data_linea])
+data = ((data+0.0) / np.sum(data,1)[:,np.newaxis])[:,:2]
+labels = np.concatenate([labels_marca,labels_fondo, labels_linea])
 
 # Creo y entreno los segmentadores euclideos
 start = time.time()
-segmEuc = seg.segEuclid([data_fondo, data_linea, data_marca])
+segmEuc = seg.segEuclid(data, labels)
 end = time.time()
 print("Tiempo de entrenamiento: " + str(end-start))
 
@@ -63,7 +70,9 @@ while True:
         start = time.time()
         
     imrgbn = np.rollaxis((np.rollaxis(imNp,2)+0.0)/np.sum(imNp,2),0,3)[:,:,:2]
-    labelsEu=segmEuc.segmenta(imrgbn)
+    im_2D = np.reshape(imrgbn, (imrgbn.shape[0]*imrgbn.shape[1],imrgbn.shape[2]))
+    labelsEu = segmEuc.segmenta(im_2D)
+    labelsEu = np.reshape(labelsEu, (imNp.shape[0], imNp.shape[1]))
 
     if count == 0:
         end = time.time()
