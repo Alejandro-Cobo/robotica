@@ -1,8 +1,12 @@
 # coding=UTF-8
+import warnings
+warnings.simplefilter("ignore", category=DeprecationWarning)
 import numpy as np
 import scipy.linalg as la
 import sklearn.neighbors
 from sklearn.naive_bayes import GaussianNB
+import warnings
+warnings.simplefilter("ignore",DeprecationWarning)
 from sklearn.qda import QDA
 
 class segEuclid():
@@ -25,7 +29,7 @@ class segKNN():
         # 0: rojo
         # 1: verde
         # 2: azul
-        self.neigh = sklearn.neighbors.KNeighborsClassifier(n_jobs=-1)
+        self.neigh = sklearn.neighbors.KNeighborsClassifier(n_jobs=2)
         self.neigh.fit(data, labels)
 
     def segmenta(self,X):
