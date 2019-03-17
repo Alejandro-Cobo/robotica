@@ -1,6 +1,4 @@
 # coding=UTF-8
-import warnings
-warnings.simplefilter("ignore", category=DeprecationWarning)
 import numpy as np
 import scipy.linalg as la
 import sklearn.neighbors
