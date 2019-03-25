@@ -11,8 +11,8 @@ from mpl_toolkits.mplot3d import Axes3D as ax3d
 # markImg = imread('lineaMarcada2017-2.png')
 # markImgb = imread('lineaMarcada2017-2b.png')
 
-imNp = imread('linea.png')
-markImg = imread('lineaMarcada.png')
+imNp = imread('imgs/linea.png')
+markImg = imread('imgs/lineaMarcada.png')
 
 # leo los datos
 data_marca=imNp[np.where(np.all(np.equal(markImg,(255,0,0)),2))]
