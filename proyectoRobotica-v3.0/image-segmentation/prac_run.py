@@ -37,7 +37,7 @@ seg = seg.segQDA(data, labels)
 # Inicio la captura de imagenes
 capture = cv2.VideoCapture("videos/video2017-4.avi")
 
-fourcc = cv2.cv.CV_FOURCC(*'XVID')
+# fourcc = cv2.cv.CV_FOURCC(*'XVID')
 # out = cv2.VideoWriter('videos/segmentacion.avi', fourcc, 24, (320*2,240), True)
 
 # Ahora clasifico el video
@@ -55,16 +55,15 @@ while True:
 
     # Segmento la imagen.
     # Compute rgb normalization 
-    imrgbn = np.rollaxis((np.rollaxis(imNp,2)+0.0)/np.sum(imNp,2),0,3)[:,:,:2]
-    im2D = np.reshape(imrgbn, (imrgbn.shape[0]*imrgbn.shape[1],imrgbn.shape[2]))
-    labels_seg = np.reshape(seg.segmenta(im2D), (imNp.shape[0], imNp.shape[1]))
+    imNp = np.rollaxis((np.rollaxis(imNp,2)+0.0)/np.sum(imNp,2),0,3)[:,:,:2]
+    im2D = np.reshape(imNp, (imNp.shape[0]*imNp.shape[1],imNp.shape[2]))
+    labels_seg = np.reshape(seg.segmenta(im2D), (img.shape[0], img.shape[1]))
 
     # Vuelvo a pintar la imagen
     # genero la paleta de colores
     paleta = np.array([[0,255,0],[0,0,255],[255,0,0]],dtype=np.uint8)
     # ahora pinto la imagen
-    cv2.imshow("Segmentacion",cv2.cvtColor(paleta[labels_seg],cv2.COLOR_RGB2BGR))
-
+    cv2.imshow("Segmentacion QDA",cv2.cvtColor(paleta[labels_seg],cv2.COLOR_RGB2BGR))
 
     # Para pintar texto en una imagen
     # cv2.putText(imDraw,'Lineas: {0}'.format(len(convDefsLarge)),(15,20),cv2.FONT_HERSHEY_PLAIN,1,(255,0,0))
@@ -74,8 +73,8 @@ while True:
     # Guardo esta imagen para luego con todas ellas generar un video
     # cv2.imwrite("frames/frame%02d.jpg" % im_count, cv2.cvtColor(paleta[labelsEu], cv2.COLOR_BGR2RGB))
     # out.write(cv2.cvtColor(np.concatenate((imNp, paleta[labels_seg]),axis=1), cv2.COLOR_BGR2RGB))
-    
-capture.release()
+
 # out.release()
+capture.release()
 cv2.destroyAllWindows()
 
