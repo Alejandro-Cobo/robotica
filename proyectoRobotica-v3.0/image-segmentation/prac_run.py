@@ -53,7 +53,7 @@ while True:
     cv2.waitKey(1)
 
     im_count += 1
-    if im_count % 2 == 0:
+    if im_count % 3 != 0:
         continue
         
     if not ret:
@@ -73,8 +73,21 @@ while True:
 
     linImg = (labels_seg==1).astype(np.uint8)*255
     contList, hier = cv2.findContours(linImg,cv2.RETR_LIST,cv2.CHAIN_APPROX_NONE)
-    cv2.drawContours(img, contList, -1, (0,0,255))
 
+    cv2.drawContours(img, contList, -1, (0,0,255))
+    
+    chullList = [cv2.convexHull(cont,returnPoints=False) for cont in contList]
+
+    convDefs = [cv2.convexityDefects(cont, chull) for (cont,chull) in zip(contList,chullList) if len(chull) > 3]
+    cont = max(contList, key=lambda x : len(x))
+    cnvDef = max(convDefs, key=lambda x : x != None and len(x))
+    listConvDefs = cnvDef[:,0,:].tolist()
+    convDefsLarge = [[init,end,mid,length] for init,end,mid,length in listConvDefs if length>1000]
+    escenas = ["Linea recta", "Curva derecha/izquierda", "Cruce con 2 o 3 salidas"]
+    # Para pintar texto en una imagen
+    if convDefsLarge == None:
+            convDefsLarge = []
+    cv2.putText(img,'{0}'.format(escenas[min(len(convDefsLarge), 2)]),(15,20),cv2.FONT_HERSHEY_PLAIN,1,(255,0,0))
     # Vuelvo a pintar la imagen
     # genero la paleta de colores
     paleta = np.array([[0,0,0],[0,0,255],[255,0,0]],dtype=np.uint8)
@@ -82,8 +95,7 @@ while True:
     imSeg = cv2.cvtColor(paleta[labels_seg],cv2.COLOR_RGB2BGR)
     cv2.imshow("Segmentacion QDA", np.concatenate((img, imSeg), axis=1))
 
-    # Para pintar texto en una imagen
-    # cv2.putText(imDraw,'Lineas: {0}'.format(len(convDefsLarge)),(15,20),cv2.FONT_HERSHEY_PLAIN,1,(255,0,0))
+    
     # Para pintar un circulo en el centro de la imagen
     # cv2.circle(imDraw, (imDraw.shape[1]/2,imDraw.shape[0]/2), 2, (0,255,0), -1)
 
