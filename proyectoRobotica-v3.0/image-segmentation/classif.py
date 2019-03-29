@@ -1,9 +1,10 @@
 # coding=UTF-8
-from sklearn.qda import QDA
+import numpy as np
+from sklearn import discriminant_analysis as da
 
 class segQDA():
     def __init__(self, data, labels):
-        self.gnb = QDA()
+        self.gnb = da.QuadraticDiscriminantAnalysis()
         self.gnb.fit(data, labels)
 
     def segmenta(self,X):
