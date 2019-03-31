@@ -1,3 +1,4 @@
+# coding=UTF-8
 ####################################################
 # Esqueleto de programa para ejecutar el algoritmo de segmentacion.
 # Este programa primero entrena el clasificador con los datos de
@@ -79,19 +80,11 @@ while True:
     chull = cv2.convexHull(cont,returnPoints=False)
 
     # Agujeros
-    # convDefs = [cv2.convexityDefects(cont, chull) for (cont,chull) in zip(contList,chullList) if len(chull) > 3]
     convDef = cv2.convexityDefects(cont, chull)
     listConvDefs = convDef[:,0,:].tolist()
-    convDefsLarge = [[init,end,mid,length] for init,end,mid,length in listConvDefs if length>1000]
+    convDefsLarge = [[init,end,mid,length] for init,end,mid,length in listConvDefs if length>2000]
 
-    """
-    rect = cv2.minAreaRect(cont)
-    box = cv2.cv.BoxPoints(rect)
-    box = np.int0(box)
-    # cv2.drawContours(img,[box],0,(0,0,255),2)
-    """
-
-    # Escenas
+    # Identifico las escenas
     escenas = ["Linea recta", "Curva", "Cruce"]
 
     if convDefsLarge == None:
@@ -101,43 +94,56 @@ while True:
 
     # Curva
     if min(len(convDefsLarge), 2) == 1:
+        # Identifico si es hacia la izaruierda o la derecha usando el 
+        # area signada de los 3 puntos que definen el agujero (init, mid, end)
         init = cont[convDefsLarge[0][0]][0]
         mid = cont[convDefsLarge[0][2]][0]
         end = cont[convDefsLarge[0][1]][0]
         if init[1] < end[1]:
             init, end = end, init
-        init[1] *= -1
-        mid[1] *= -1
-        end[1] *= -1
-        sarea = 0.5*((mid[0]-init[0])*(end[1]-init[1]) - (end[0]-init[0])*(mid[1]-init[1]))
+        sarea = 0.5*((mid[0]-end[0])*(init[1]-end[1]) - (init[0]-end[0])*(mid[1]-end[1]))
         if sarea < 0:
-            text += " derecha"
+            text += " hacia la derecha"
         else:
-            text += " izquierda"
+            text += " hacia la izquierda"
 
     # Cruce
-    if min(len(convDefsLarge), 2) == 2:
+    elif min(len(convDefsLarge), 2) == 2:
+        # Identifico si hay 2 o 3 salidas en función del número de agujeros 
         if len(convDefsLarge) < 4:
-            text += " 2 salidas"
+            text += " con 2 salidas"
         else:
-            text += " 3 salidas"
+            text += " con 3 salidas"
 
-    entrada = []
-    salida = []
-    maxY = max(cont, key=lambda x : x[0][1])
-    for pt in cont:
-        if pt[0][1] == maxY:
-            entrada.append(pt)
-    if any(entrada[0][0] == 0):
-        for pt in cont:
-            if pt[0][0] == 0:
-                entrada.append(pt)
-                
     cv2.putText(img, text, (15,20), cv2.FONT_HERSHEY_PLAIN, 1, (255,0,0))
-    minY = min(cont, key=lambda x:x[0][1])[0][1]
-    # for pt in cont:
-        # if pt[0][1] == minY:
-            # cv2.circle(img, (pt[0][0], pt[0][1]), 1, (0,255,0))
+    
+    """
+    # Hallo las entradas y salidas
+    maxX = max(cont, key=lambda x : x[0][0])[0]
+    maxY = max(cont, key=lambda x : x[0][1])[0]
+    minX = min(cont, key=lambda x : x[0][0])[0]
+    minY = min(cont, key=lambda x : x[0][1])[0]
+
+    for pt in cont:
+        if maxY[1] == img.shape[0] - 2:
+            if pt[0][1] == maxY[1]:
+                cv2.circle(img, (pt[0][0], pt[0][1]), 2, (0,255,0), -1)
+        else:
+            
+        if minY[1] == 1:
+            if pt[0][1] == minY[1]:
+                cv2.circle(img, (pt[0][0], pt[0][1]), 2, (0,0,255), -1)
+        else:
+        """
+            
+
+    """
+    rect = cv2.minAreaRect(cont)
+    box = cv2.cv.BoxPoints(rect)
+    box = np.int0(box)
+    # cv2.drawContours(img,[box],0,(0,0,255),2)
+    """
+
     # Vuelvo a pintar la imagen
     # genero la paleta de colores
     paleta = np.array([[0,0,0],[0,0,255],[255,0,0]],dtype=np.uint8)
@@ -145,7 +151,7 @@ while True:
     imSeg = cv2.cvtColor(paleta[labels_seg],cv2.COLOR_RGB2BGR)
     cv2.imshow("Segmentacion QDA", np.concatenate((img, imSeg), axis=1))
     k = cv2.waitKey(1)
-    if k == ord('q'):
+    if k == ord(' '):
         cv2.waitKey(0)
     
     # Para pintar un circulo en el centro de la imagen
@@ -153,7 +159,6 @@ while True:
 
     # Guardo esta imagen para luego con todas ellas generar un video
     # cv2.imwrite("frames/frame%02d.jpg" % im_count, cv2.cvtColor(paleta[labels_seg], cv2.COLOR_BGR2RGB))
-    # im_count += 1
     # out.write(cv2.cvtColor(imConcat, cv2.COLOR_BGR2RGB))
 
     times.append((time.time() - start))
