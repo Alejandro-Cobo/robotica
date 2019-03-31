@@ -50,7 +50,6 @@ while True:
     start = time.time()
 
     ret, img = capture.read()
-    cv2.waitKey(1)
 
     im_count += 1
     if im_count % 3 != 0:
@@ -68,33 +67,86 @@ while True:
     # Aplico un filtro gaussiano
     imNp = cv2.GaussianBlur(imNp, (0,0), 1)
     im2D = np.reshape(imNp, (imNp.shape[0]*imNp.shape[1],imNp.shape[2]))
-
     labels_seg = np.reshape(seg.segmenta(im2D), (img.shape[0], img.shape[1]))
 
+    # Contornos
     linImg = (labels_seg==1).astype(np.uint8)*255
     contList, hier = cv2.findContours(linImg,cv2.RETR_LIST,cv2.CHAIN_APPROX_NONE)
-
-    cv2.drawContours(img, contList, -1, (0,0,255))
-    
-    chullList = [cv2.convexHull(cont,returnPoints=False) for cont in contList]
-
-    convDefs = [cv2.convexityDefects(cont, chull) for (cont,chull) in zip(contList,chullList) if len(chull) > 3]
     cont = max(contList, key=lambda x : len(x))
-    cnvDef = max(convDefs, key=lambda x : x != None and len(x))
-    listConvDefs = cnvDef[:,0,:].tolist()
+    cv2.drawContours(img, [cont], -1, (0,0,255))
+    
+    # Cierre convexo
+    chull = cv2.convexHull(cont,returnPoints=False)
+
+    # Agujeros
+    # convDefs = [cv2.convexityDefects(cont, chull) for (cont,chull) in zip(contList,chullList) if len(chull) > 3]
+    convDef = cv2.convexityDefects(cont, chull)
+    listConvDefs = convDef[:,0,:].tolist()
     convDefsLarge = [[init,end,mid,length] for init,end,mid,length in listConvDefs if length>1000]
-    escenas = ["Linea recta", "Curva derecha/izquierda", "Cruce con 2 o 3 salidas"]
-    # Para pintar texto en una imagen
+
+    """
+    rect = cv2.minAreaRect(cont)
+    box = cv2.cv.BoxPoints(rect)
+    box = np.int0(box)
+    # cv2.drawContours(img,[box],0,(0,0,255),2)
+    """
+
+    # Escenas
+    escenas = ["Linea recta", "Curva", "Cruce"]
+
     if convDefsLarge == None:
             convDefsLarge = []
-    cv2.putText(img,'{0}'.format(escenas[min(len(convDefsLarge), 2)]),(15,20),cv2.FONT_HERSHEY_PLAIN,1,(255,0,0))
+
+    text = escenas[min(len(convDefsLarge), 2)]
+
+    # Curva
+    if min(len(convDefsLarge), 2) == 1:
+        init = cont[convDefsLarge[0][0]][0]
+        mid = cont[convDefsLarge[0][2]][0]
+        end = cont[convDefsLarge[0][1]][0]
+        if init[1] < end[1]:
+            init, end = end, init
+        init[1] *= -1
+        mid[1] *= -1
+        end[1] *= -1
+        sarea = 0.5*((mid[0]-init[0])*(end[1]-init[1]) - (end[0]-init[0])*(mid[1]-init[1]))
+        if sarea < 0:
+            text += " derecha"
+        else:
+            text += " izquierda"
+
+    # Cruce
+    if min(len(convDefsLarge), 2) == 2:
+        if len(convDefsLarge) < 4:
+            text += " 2 salidas"
+        else:
+            text += " 3 salidas"
+
+    entrada = []
+    salida = []
+    maxY = max(cont, key=lambda x : x[0][1])
+    for pt in cont:
+        if pt[0][1] == maxY:
+            entrada.append(pt)
+    if any(entrada[0][0] == 0):
+        for pt in cont:
+            if pt[0][0] == 0:
+                entrada.append(pt)
+                
+    cv2.putText(img, text, (15,20), cv2.FONT_HERSHEY_PLAIN, 1, (255,0,0))
+    minY = min(cont, key=lambda x:x[0][1])[0][1]
+    # for pt in cont:
+        # if pt[0][1] == minY:
+            # cv2.circle(img, (pt[0][0], pt[0][1]), 1, (0,255,0))
     # Vuelvo a pintar la imagen
     # genero la paleta de colores
     paleta = np.array([[0,0,0],[0,0,255],[255,0,0]],dtype=np.uint8)
     # ahora pinto la imagen
     imSeg = cv2.cvtColor(paleta[labels_seg],cv2.COLOR_RGB2BGR)
     cv2.imshow("Segmentacion QDA", np.concatenate((img, imSeg), axis=1))
-
+    k = cv2.waitKey(1)
+    if k == ord('q'):
+        cv2.waitKey(0)
     
     # Para pintar un circulo en el centro de la imagen
     # cv2.circle(imDraw, (imDraw.shape[1]/2,imDraw.shape[0]/2), 2, (0,255,0), -1)
