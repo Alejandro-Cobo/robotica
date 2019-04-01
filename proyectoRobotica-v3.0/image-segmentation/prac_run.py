@@ -45,8 +45,8 @@ print("Tiempo de entrenamiento: " + str(time.time() - start) + " s.")
 # Inicio la captura de imagenes
 capture = cv2.VideoCapture("videos/video2017-4.avi")
 
-fourcc = cv2.cv.CV_FOURCC(*'XVID')
-out = cv2.VideoWriter('videos/analisis.avi', fourcc, 24, (320,240), True)
+# fourcc = cv2.cv.CV_FOURCC(*'XVID')
+# out = cv2.VideoWriter('videos/analisis.avi', fourcc, 24, (320,240), True)
 
 # Ahora clasifico el video
 im_count = 0
@@ -150,7 +150,6 @@ while True:
                     cv2.circle(img, (pt[0][0], pt[0][1]), 2, (0,0,255), -1)
 
     # Cruce
-    """ 
     else:
         # Estimo la orientación de la flecha
         flechaImg = (labels_seg==2).astype(np.uint8)*255
@@ -158,18 +157,6 @@ while True:
         if len(contList) > 0:
             cont = max(contList, key=lambda x : len(x))
             cv2.drawContours(img, cont, -1, (255,0,0))
-            rect = cv2.minAreaRect(cont)
-            box = cv2.cv.BoxPoints(rect)
-            box = np.int0(box)
-            cv2.drawContours(img,[box],0,(255,0,0),2)
-    """
-
-    """
-    rect = cv2.minAreaRect(cont)
-    box = cv2.cv.BoxPoints(rect)
-    box = np.int0(box)
-    # cv2.drawContours(img,[box],0,(0,0,255),2)
-    """
 
     # Vuelvo a pintar la imagen
     # genero la paleta de colores
@@ -189,12 +176,12 @@ while True:
     # cv2.imwrite("frames/frame%02d.jpg" % im_count, cv2.cvtColor(paleta[labels_seg], cv2.COLOR_BGR2RGB))
     
     # Guardo el vídeo mostrado por pantalla directamente
-    out.write(img)
+    # out.write(img)
 
     times.append((time.time() - start))
 
 print("Tiempo medio de procesado de una imagen: " + str(np.mean(times)) + " s.")
-out.release()
+# out.release()
 capture.release()
 cv2.destroyAllWindows()
 
