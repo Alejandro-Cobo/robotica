@@ -18,6 +18,9 @@ import numpy as np
 import classif as seg
 import time
 
+def sarea(a,b,c):
+    return 0.5*((b[0]-a[0])*(c[1]-a[1]) - (c[0]-a[0])*(b[1]-a[1]))
+
 print("Pulsar Espaco para detener el vídeo o 'q' para terminar la ejecución")
 
 start = time.time()
@@ -43,7 +46,7 @@ seg = seg.segQDA(data, labels)
 print("Tiempo de entrenamiento: " + str(time.time() - start) + " s.")
 
 # Inicio la captura de imagenes
-capture = cv2.VideoCapture("videos/video2017-4.avi")
+capture = cv2.VideoCapture("videos/video2017-3.avi")
 
 # fourcc = cv2.cv.CV_FOURCC(*'XVID')
 # out = cv2.VideoWriter('videos/analisis.avi', fourcc, 24, (320,240), True)
@@ -58,15 +61,18 @@ while True:
     
     # Segmento una de cada dos imágenes
     im_count += 1
-    if im_count % 2 != 0:
+    if im_count % 2 != 0 or im_count < 470:
         continue
     
     # Si no hay más imágenes termino el bucle
     if not ret:
         break
 
+    # Segemtno solo una parte de la imagen
+    imDraw = img[80:,:,:]
+
     # La pongo en formato numpy
-    imNp = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    imNp = cv2.cvtColor(imDraw, cv2.COLOR_BGR2RGB)
 
     # Segmntación
     # Compute rgb normalization
@@ -76,56 +82,117 @@ while True:
     # Adapto la imagen al formato de entrada del segmentador
     im2D = np.reshape(imNp, (imNp.shape[0]*imNp.shape[1],imNp.shape[2]))
     # Segmento la imagen
-    labels_seg = np.reshape(seg.segmenta(im2D), (img.shape[0], img.shape[1]))
+    labels_seg = np.reshape(seg.segmenta(im2D), (imDraw.shape[0], imDraw.shape[1]))
 
-    # Hallo los contornos
-    linImg = (labels_seg==1).astype(np.uint8)*255
-    contList, hier = cv2.findContours(linImg,cv2.RETR_LIST,cv2.CHAIN_APPROX_NONE)
+    # Hallo los contornos del fondo (ignorando las marcas)
+    backImg = (labels_seg!=1).astype(np.uint8)*255
+    contList, hier = cv2.findContours(backImg,cv2.RETR_LIST,cv2.CHAIN_APPROX_NONE)
     contList = [cont for cont in contList if len(cont) > 100]
-    cv2.drawContours(img, contList, -1, (0,0,255))
-    cont = max(contList, key=lambda x : len(x))
+    cv2.drawContours(imDraw, contList, -1, (0,0,255))
+    # Número de agujeros
+    nHoles = len(contList)
+    enCruce = nHoles > 2
+
+    # Busco la flecha si estoy en un cruce
+    if enCruce:
+        # Hallo los contornos de la flecha
+        markImg = (labels_seg==2).astype(np.uint8)*255
+        contList, hier = cv2.findContours(markImg,cv2.RETR_LIST,cv2.CHAIN_APPROX_NONE)
+        contList = [cont for cont in contList if len(cont) > 100]
+        if len(contList) > 0:
+            cont = contList[0]
+            cv2.drawContours(imDraw, contList, -1, (255,0,0))
+            # Hallo la elipse
+            rect = cv2.fitEllipse(cont)
+            box = cv2.cv.BoxPoints(rect)
+            box = np.int0(box)
+            # Calculo los puntos que definen el cuadrado 
+            # sobre el que se inscribe la elipse
+            p1 = (box[0] + box[3]) / 2
+            p2 = (box[1] + box[2]) / 2
+            p3 = (box[0] + box[1]) / 2
+            p4 = (box[2] + box[3]) / 2
+            # Calculo los puntos que están situados en los bordes de la imagen
+            # según la dirección de la flecha (vector v)
+            v = np.array(p2 -p1)
+            if all(v != 0):
+                # Al principio supongo que pSalida1 está en el borde derecho y pSalida2 en el izquierdo
+                pSalida1 = [imDraw.shape[1]-2, p2[1] + ((imDraw.shape[1]-2-p2[0])*v[1])/(v[0])]
+                pSalida2 = [0, p1[1] + ((0-p1[0])*v[1])/(v[0])]
+                # Los corrijo si se salen de los bordes de la imagen
+                if pSalida1[1] < 0:
+                    pSalida1 = [p2[0] + ((0-p2[1])*v[0])/(v[1]), 0]
+                elif pSalida1[1] > imDraw.shape[0] - 2:
+                    pSalida1 = [p2[0] + ((imDraw.shape[0] - 2-p2[1])*v[0])/(v[1]), imDraw.shape[0] - 2]
+                if pSalida2[1] < 0:
+                    pSalida2 = [p1[0] + ((0-2-p1[1])*v[0])/(v[1]), 0]
+                elif pSalida2[1] > imDraw.shape[0] - 2:
+                    pSalida2 = [p1[0] + ((imDraw.shape[0]-2-p1[1])*v[0])/(v[1]), imDraw.shape[0] - 2]
+
+                # Estimo la orientación de la flecha según qué mitad tenga más área
+                markPts = np.argwhere(labels_seg == 2)
+                markPts = [ [pt[1],pt[0]] for pt in markPts]
+                mark1 = []
+                mark2 = []
+                for pt in markPts:
+                    sa = sarea(p3,p4,pt)
+                    if sa < 0:
+                        mark1.append(pt)
+                    elif sa > 0:
+                        mark2.append(pt)
+
+                if len(mark1) > len(mark2):
+                    pSalida = pSalida1
+                else:
+                    pSalida = pSalida2
+                # Pinto la línea que sale de la flecha y llega al punto de salida
+                cv2.line(imDraw,tuple((box[0] + box[2]) / 2),tuple(pSalida),(0,0,255),2)
+
+    # Vuelvo a pintar la imagen
+    # genero la paleta de colores
+    paleta = np.array([[0,0,0],[0,0,255],[255,0,0]],dtype=np.uint8)
+    # ahora pinto la imagen
+    imSeg = cv2.cvtColor(paleta[labels_seg],cv2.COLOR_RGB2BGR)
+    cv2.imshow("Segmentacion QDA", img)
+
+    # Pulsar Espaco para detener el vídeo o 'q' para terminar la ejecución 
+    k = cv2.waitKey(1)
+    if k == ord(' '):
+        cv2.putText(img, "Pausado en el fotograma " + str(im_count), (10,20), cv2.FONT_HERSHEY_PLAIN, 1, (255,0,0))
+        cv2.imshow("Segmentacion QDA", img)
+        k = cv2.waitKey(0)
+    if k == ord('q'):
+        break
+
+    # Guardo esta imagen para luego con todas ellas generar un video
+    # cv2.imwrite("frames/frame%02d.jpg" % im_count, cv2.cvtColor(paleta[labels_seg], cv2.COLOR_BGR2RGB))
+    
+    # Guardo el vídeo mostrado por pantalla directamente
+    # out.write(img)
+
+    times.append((time.time() - start))
+
+print("Tiempo medio de procesado de una imagen: " + str(np.mean(times)) + " s.")
+# out.release()
+capture.release()
+cv2.destroyAllWindows()
+
+"""
+###################### BASURERO ######################
+cont = max(contList, key=lambda x : len(x))
     
     # Hallo los cierre convexo
     chull = cv2.convexHull(cont,returnPoints=False)
 
     # Hallo los agujeros en los cierres convexos
+    
     convDef = cv2.convexityDefects(cont, chull)
     listConvDefs = convDef[:,0,:].tolist()
     convDefsLarge = [[init,end,mid,length] for init,end,mid,length in listConvDefs if length>2000]
     if convDefsLarge == None:
             convDefsLarge = []
 
-    # Identifico las escenas
-    escenas = ["Linea recta", "Curva", "Cruce"]
-    text = escenas[min(len(convDefsLarge), 2)]
-
-    # Compruebo si la curva es hacia la derecha o la izquierda
-    if len(contList) == 1 and min(len(convDefsLarge), 2) == 1:
-        # Identifico si es hacia la izaruierda o la derecha usando el 
-        # area signada de los 3 puntos que definen el agujero (init, mid, end)
-        init = cont[convDefsLarge[0][0]][0]
-        mid = cont[convDefsLarge[0][2]][0]
-        end = cont[convDefsLarge[0][1]][0]
-        if init[1] < end[1]:
-            init, end = end, init
-        sarea = 0.5*((mid[0]-end[0])*(init[1]-end[1]) - (init[0]-end[0])*(mid[1]-end[1]))
-        if sarea < 0:
-            text += " hacia la derecha"
-        else:
-            text += " hacia la izquierda"
-
-    # Compruebo el número de salidas del cruce
-    elif min(len(convDefsLarge), 2) == 2:
-        # Identifico si hay 2 o 3 salidas en función del número de agujeros 
-        if len(convDefsLarge) < 4:
-            text += " con 2 salidas"
-        else:
-            text += " con 3 salidas"
-
-    # Pinto la escena identificada en la imagen
-    cv2.putText(img, text, (15,20), cv2.FONT_HERSHEY_PLAIN, 1, (255,0,0))    
-
-    # Identifico la entrada y salida de la escena
+             # Identifico la entrada y salida de la escena
     maxX = max(cont, key=lambda x : x[0][0])[0]
     minX = min(cont, key=lambda x : [x[0][0], -x[0][1]])[0]
     maxY = max(cont, key=lambda x : x[0][1])[0]
@@ -157,31 +224,14 @@ while True:
         if len(contList) > 0:
             cont = max(contList, key=lambda x : len(x))
             cv2.drawContours(img, cont, -1, (255,0,0))
-
-    # Vuelvo a pintar la imagen
-    # genero la paleta de colores
-    paleta = np.array([[0,0,0],[0,0,255],[255,0,0]],dtype=np.uint8)
-    # ahora pinto la imagen
-    imSeg = cv2.cvtColor(paleta[labels_seg],cv2.COLOR_RGB2BGR)
-    cv2.imshow("Segmentacion QDA", img)
-
-    # Pulsar Espaco para detener el vídeo o 'q' para terminar la ejecución 
-    k = cv2.waitKey(1)
-    if k == ord(' '):
-        k = cv2.waitKey(0)
-    if k == ord('q'):
-        break
-
-    # Guardo esta imagen para luego con todas ellas generar un video
-    # cv2.imwrite("frames/frame%02d.jpg" % im_count, cv2.cvtColor(paleta[labels_seg], cv2.COLOR_BGR2RGB))
-    
-    # Guardo el vídeo mostrado por pantalla directamente
-    # out.write(img)
-
-    times.append((time.time() - start))
-
-print("Tiempo medio de procesado de una imagen: " + str(np.mean(times)) + " s.")
-# out.release()
-capture.release()
-cv2.destroyAllWindows()
+            
+            # rect = cv2.minAreaRect(cont)
+            # box = cv2.cv.BoxPoints(rect)
+            # box = np.int0(box)
+            # cv2.drawContours(img,[box],0,(255,0,0),2)
+    rect = cv2.minAreaRect(cont)
+    box = cv2.cv.BoxPoints(rect)
+    box = np.int0(box)
+    # cv2.drawContours(img,[box],0,(0,0,255),2)
+"""
 
