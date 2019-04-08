@@ -53,7 +53,7 @@ seg = seg.segQDA(data, labels)
 print("Tiempo de entrenamiento: " + str(time.time() - start) + " s.")
 
 # Inicio la captura de imagenes
-capture = cv2.VideoCapture("videos/video2017-3.avi")
+capture = cv2.VideoCapture("videos/video2017-4.avi")
 
 # fourcc = cv2.cv.CV_FOURCC(*'XVID')
 # out = cv2.VideoWriter('videos/analisis.avi', fourcc, 24, (320,240), True)
@@ -192,10 +192,12 @@ while True:
             entrada = i
     # Pinto la entrada en verde
     pIn = bordes[entrada][len(bordes[entrada])/2]
+    [ cv2.circle(imDraw,tuple(pt),2,(0,255,0),1) for pt in bordes[entrada] ]
     # Determino la salida de la línea
     if not enCruce and (len(bordes)==2):
         salida = (entrada+1)%2
         # Pinto la salida en rojo
+        [ cv2.circle(imDraw,tuple(pt),2,(0,0,255),1) for pt in bordes[salida] ]
         pOut = bordes[salida][len(bordes[salida])/2]
         cv2.line(imDraw,tuple(pIn),tuple(pOut),(0,0,255,),2)
     elif enCruce and pSalida:
@@ -207,6 +209,7 @@ while True:
                 salida = i
                 minDist = d
         # Pinto la salida en rojo
+        [ cv2.circle(imDraw,tuple(pt),2,(0,0,255),1) for pt in bordes[salida] ]
         pOut = bordes[salida][len(bordes[salida])/2]
         cv2.line(imDraw,tuple(pIn),tuple(pOut),(0,0,255,),2)
 
