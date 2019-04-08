@@ -49,8 +49,8 @@ print("Tiempo de entrenamiento: " + str(time.time() - start) + " s.")
 # Inicio la captura de imagenes
 capture = cv2.VideoCapture("videos/video2017-4.avi")
 
-fourcc = cv2.cv.CV_FOURCC(*'XVID')
-out = cv2.VideoWriter('videos/analisis.avi', fourcc, 24, (320,240), True)
+# fourcc = cv2.cv.CV_FOURCC(*'XVID')
+# out = cv2.VideoWriter('videos/analisis.avi', fourcc, 24, (320,240), True)
 
 # Ahora clasifico el video
 im_count = 0
@@ -90,9 +90,9 @@ while True:
     # Compruebo si estoy en un cruce
     enCruce = analisis.esCruce(imDraw,labels_seg)
     if enCruce:
-        cv2.putText(img, "Cruce detectado", (10,40), cv2.FONT_HERSHEY_PLAIN, 1, (255,0,0))
+        cv2.putText(img, "Cruce detectado", (10,20), cv2.FONT_HERSHEY_PLAIN, 1, (255,0,0))
     else:
-        cv2.putText(img, "Sin cruces", (10,40), cv2.FONT_HERSHEY_PLAIN, 1, (255,0,0))
+        cv2.putText(img, "Sin cruces", (10,20), cv2.FONT_HERSHEY_PLAIN, 1, (255,0,0))
     
     # Busco la flecha si estoy en un cruce
     if enCruce:
@@ -127,12 +127,12 @@ while True:
     # cv2.imshow("Imagen segmentada", imCon)
     cv2.imshow("Imagen procesada", img)
     # Guardo el vídeo mostrado por pantalla
-    out.write(img)
+    # out.write(img)
 
     # Pulsar Espaco para detener el vídeo o 'q' para terminar la ejecución 
     k = cv2.waitKey(1)
     if k == ord(' '):
-        cv2.putText(img, "Pausado en el fotograma " + str(im_count), (10,20), cv2.FONT_HERSHEY_PLAIN, 1, (255,0,0))
+        cv2.putText(img, "Pausado en el fotograma " + str(im_count), (10,40), cv2.FONT_HERSHEY_PLAIN, 1, (255,0,0))
         cv2.imshow("Imagen procesada", img)
         k = cv2.waitKey(0)
     if k == ord('q'):
@@ -143,7 +143,7 @@ while True:
 
     times.append((time.time() - start))
 
-out.release()
+# out.release()
 capture.release()
 cv2.destroyAllWindows()
 print("Tiempo medio de procesado de una imagen: " + str(np.mean(times)) + " s.")
