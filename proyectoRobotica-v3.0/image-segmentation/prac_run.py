@@ -17,6 +17,13 @@ import numpy as np
 
 import classif as seg
 import time
+import random
+
+def dist(p,q):
+    return (p[0]-q[0])**2 + (p[1]-q[1])**2
+
+def midPoint(p,q):
+    return [(p[0]+q[0])/2, (p[1]+q[1])/2]
 
 def sarea(a,b,c):
     return 0.5*((b[0]-a[0])*(c[1]-a[1]) - (c[0]-a[0])*(b[1]-a[1]))
@@ -54,6 +61,8 @@ capture = cv2.VideoCapture("videos/video2017-3.avi")
 # Ahora clasifico el video
 im_count = 0
 times = []
+ultimoPSalida = None
+ultimaEntrada = None
 while True:
     start = time.time()
 
@@ -61,7 +70,7 @@ while True:
     
     # Segmento una de cada dos imágenes
     im_count += 1
-    if im_count % 2 != 0 or im_count < 470:
+    if im_count % 2 != 0:
         continue
     
     # Si no hay más imágenes termino el bucle
@@ -83,8 +92,8 @@ while True:
     im2D = np.reshape(imNp, (imNp.shape[0]*imNp.shape[1],imNp.shape[2]))
     # Segmento la imagen
     labels_seg = np.reshape(seg.segmenta(im2D), (imDraw.shape[0], imDraw.shape[1]))
-
-    # Hallo los contornos del fondo (ignorando las marcas)
+    
+    # Hallo los contornos del fondo ignorando las marcas
     backImg = (labels_seg!=1).astype(np.uint8)*255
     contList, hier = cv2.findContours(backImg,cv2.RETR_LIST,cv2.CHAIN_APPROX_NONE)
     contList = [cont for cont in contList if len(cont) > 100]
@@ -94,6 +103,7 @@ while True:
     enCruce = nHoles > 2
 
     # Busco la flecha si estoy en un cruce
+    pSalida = None
     if enCruce:
         # Hallo los contornos de la flecha
         markImg = (labels_seg==2).astype(np.uint8)*255
@@ -145,21 +155,72 @@ while True:
                     pSalida = pSalida1
                 else:
                     pSalida = pSalida2
+                if ultimoPSalida and dist(pSalida, ultimoPSalida) > 200:
+                    pSalida = ultimoPSalida
                 # Pinto la línea que sale de la flecha y llega al punto de salida
-                cv2.line(imDraw,tuple((box[0] + box[2]) / 2),tuple(pSalida),(0,0,255),2)
+                # cv2.line(imDraw,tuple((box[0] + box[2]) / 2),tuple(pSalida),(0,0,255),2)
+                ultimoPSalida = pSalida
+    else:
+        ultimoPSalida = None
+    # Hallo los puntos de la línea en el borde de la imagen
+    linImg = (labels_seg==1).astype(np.uint8)*255
+    contList, hier = cv2.findContours(linImg,cv2.RETR_LIST,cv2.CHAIN_APPROX_NONE)
+    contList = [cont for cont in contList if len(cont) > 100]
+    bordes = []
+    for cont in contList:
+        found = False
+        for pt in cont:
+            pt = pt[0]
+            if pt[0] == 1 or pt[0] == imDraw.shape[1]-2 or pt[1] == 1 or pt[1] == imDraw.shape[0]-2:
+                if found:
+                    bordes[-1].append(pt)
+                else:
+                    found = True
+                    bordes.append([pt])
+            else:
+                found = False
+    bordes = [ borde for borde in bordes if len(borde) > 10 ]
+    # Determino la entrada de la línea
+    yMax = [-1,-1]
+    for i in range(len(bordes)):
+        pt = max(bordes[i], key=lambda x : x[1])
+        if pt[1] > yMax[1]:
+            yMax = pt
+            entrada = i
+        elif pt[1] == yMax[1] and abs(pt[0]-imDraw.shape[1]/2) < abs(yMax[0]-imDraw.shape[1]/2):
+            yMax = pt
+            entrada = i
+    # Pinto la entrada en verde
+    pIn = bordes[entrada][len(bordes[entrada])/2]
+    # Determino la salida de la línea
+    if not enCruce and (len(bordes)==2):
+        salida = (entrada+1)%2
+        # Pinto la salida en rojo
+        pOut = bordes[salida][len(bordes[salida])/2]
+        cv2.line(imDraw,tuple(pIn),tuple(pOut),(0,0,255,),2)
+    elif enCruce and pSalida:
+        minDist = -1
+        for i in range(len(bordes)):
+            pt = min(bordes[i],key=lambda x : dist(x,pSalida))
+            d = dist(pt, pSalida)
+            if minDist==-1 or d < minDist:
+                salida = i
+                minDist = d
+        # Pinto la salida en rojo
+        pOut = bordes[salida][len(bordes[salida])/2]
+        cv2.line(imDraw,tuple(pIn),tuple(pOut),(0,0,255,),2)
 
-    # Vuelvo a pintar la imagen
     # genero la paleta de colores
     paleta = np.array([[0,0,0],[0,0,255],[255,0,0]],dtype=np.uint8)
     # ahora pinto la imagen
     imSeg = cv2.cvtColor(paleta[labels_seg],cv2.COLOR_RGB2BGR)
-    cv2.imshow("Segmentacion QDA", img)
+    cv2.imshow("Imagen procesada", img)
 
     # Pulsar Espaco para detener el vídeo o 'q' para terminar la ejecución 
     k = cv2.waitKey(1)
     if k == ord(' '):
         cv2.putText(img, "Pausado en el fotograma " + str(im_count), (10,20), cv2.FONT_HERSHEY_PLAIN, 1, (255,0,0))
-        cv2.imshow("Segmentacion QDA", img)
+        cv2.imshow("Imagen procesada", img)
         k = cv2.waitKey(0)
     if k == ord('q'):
         break
