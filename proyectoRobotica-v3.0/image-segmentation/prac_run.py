@@ -123,6 +123,8 @@ while True:
     # paleta = np.array([[0,0,0],[0,0,255],[255,0,0]],dtype=np.uint8)
     # ahora pinto la imagen
     # imSeg = cv2.cvtColor(paleta[labels_seg],cv2.COLOR_RGB2BGR)
+    # imCon = np.concatenate([img,imSeg],1)
+    # cv2.imshow("Imagen segmentada", imCon)
     cv2.imshow("Imagen procesada", img)
     # Guardo el vídeo mostrado por pantalla
     out.write(img)

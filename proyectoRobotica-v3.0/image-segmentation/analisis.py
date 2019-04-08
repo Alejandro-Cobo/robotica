@@ -110,10 +110,21 @@ def get_bordes(im, labels_seg):
                 else:
                     found = True
                     bordes.append([pt])
+
             else:
                 found = False
+    bordes = [ borde for borde in bordes if len(borde) > 5 ]
 
-    return [ borde for borde in bordes if len(borde) > 5 ]
+    # Caso particular en el que, si un borde se extiende sobre la 
+    # esquina superior izquierda de la imagen se considera como dos
+    # bordes distintos
+    xMin = min(bordes[0],key=lambda x : x[1])
+    yMin = min(bordes[-1],key = lambda x: x[0])
+    if xMin[0] == 1 and xMin[1] == 1 and yMin[0] == 2 and yMin[1] == 1:
+        bordes[0] += bordes[-1]
+        del bordes[-1]
+
+    return bordes
 
 # Devuelve el índice de la lista de bordes que repredsentan
 # la entrada de lal ínea dado una lista de bordes
