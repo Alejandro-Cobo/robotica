@@ -64,7 +64,7 @@ while True:
     
     # Segmento una de cada dos imágenes
     im_count += 1
-    if im_count % 2 != 0:
+    if im_count % 3 != 0:
         continue
     
     # Si no hay más imágenes termino el bucle
@@ -72,7 +72,7 @@ while True:
         break
 
     # Segemtno solo una parte de la imagen
-    imDraw = img[80:,:,:]
+    imDraw = img
 
     # La pongo en formato numpy
     imNp = cv2.cvtColor(imDraw, cv2.COLOR_BGR2RGB)
@@ -120,12 +120,12 @@ while True:
         cv2.line(imDraw,tuple(pIn),tuple(pOut),(0,0,255,),2)
     
     # genero la paleta de colores
-    # paleta = np.array([[0,0,0],[0,0,255],[255,0,0]],dtype=np.uint8)
+    paleta = np.array([[0,0,0],[0,0,255],[255,0,0]],dtype=np.uint8)
     # ahora pinto la imagen
-    # imSeg = cv2.cvtColor(paleta[labels_seg],cv2.COLOR_RGB2BGR)
-    # imCon = np.concatenate([img,imSeg],1)
-    # cv2.imshow("Imagen segmentada", imCon)
-    cv2.imshow("Imagen procesada", img)
+    imSeg = cv2.cvtColor(paleta[labels_seg],cv2.COLOR_RGB2BGR)
+    imCon = np.concatenate([img,imSeg],1)
+    cv2.imshow("Imagen segmentada", imCon)
+    # cv2.imshow("Imagen procesada", img)
     # Guardo el vídeo mostrado por pantalla
     # out.write(img)
 
