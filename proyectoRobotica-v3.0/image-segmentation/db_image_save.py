@@ -8,15 +8,15 @@ folder3 = "servicio/"
 folder4 = "telefono/"
 
 ################################
-folder = folder1
+folder = folder4
 ################################
 
 filename = "video.avi"
 
 cam = cv2.VideoCapture(0)
-width = int(cam.get(cv2.cv.CV_CAP_PROP_FRAME_WIDTH))
-height = int(cam.get(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT))
-fps = cam.get(cv2.cv.CV_CAP_PROP_FPS)
+width = int(cam.get(cv2.CAP_PROP_FRAME_WIDTH))
+height = int(cam.get(cv2.CAP_PROP_FRAME_HEIGHT))
+fps = cam.get(cv2.CAP_PROP_FPS)
 if fps < 1:
     print("Estimando fps...")
     nFrames = 120
@@ -26,7 +26,7 @@ if fps < 1:
     seconds = time.time() - start
     fps = nFrames / seconds
 print("{0} x {1} @ {2} fps".format(width, height, fps))
-fourcc = cv2.cv.CV_FOURCC(*'XVID')
+fourcc = cv2.VideoWriter_fourcc(*'XVID')
 out = cv2.VideoWriter('dataset/'+folder+filename, fourcc, fps, (width,height), True)
 
 record = False
