@@ -22,7 +22,7 @@ import classif as seg
 import analisis
 import geometry as geo
 
-print("Pulsar Espaco para detener el vídeo o 'q' para terminar la ejecución")
+print("Pulsar Espacio para detener el vídeo o 'q' para terminar la ejecución")
 
 start = time.time()
 # Leo las imagenes de entrenamiento
