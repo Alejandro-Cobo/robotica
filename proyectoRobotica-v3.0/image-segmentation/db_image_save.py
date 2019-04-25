@@ -2,7 +2,6 @@ import cv2
 import numpy as np
 import time    
 
-data_src = "/home/robotica/Robotica2019/proyectoRobotica-v3.0/image-segmentation/dataset/"
 folder1 = "cruz/"
 folder2 = "escaleras/"
 folder3 = "servicio/"
@@ -40,7 +39,7 @@ while True:
 
     img = np.copy(frame)
     if record:
-        cv2.putText(img, "Grabando en " + folder + filename, (10,20), cv2.FONT_HERSHEY_PLAIN, 1, (0,0,255))
+        cv2.putText(img, "Grabando en " + folder + filename, (10,20), cv2.FONT_HERSHEY_PLAIN, 1, (0,0,0))
     cv2.imshow('Camera',img)
     k = cv2.waitKey(1)
 

@@ -27,14 +27,13 @@ def get_pSalida(im, labels_seg, ultimoPSalida):
     contList = [cont for cont in contList if len(cont) > 100]
     if len(contList) > 0:
         cont = contList[0]
-        # Visualizar los contornos
+        # Visualizar los contornos de la flecha
         cv2.drawContours(im, contList, -1, (255,0,0))
         # Hallo la elipse
         rect = cv2.fitEllipse(cont)
         box = cv2.cv.BoxPoints(rect)
         box = np.int0(box)
-        # Calculo los puntos que definen el rombo 
-        # sobre el que se inscribe la elipse
+        # Calculo los puntos que definen los ejes de la elipse
         p1 = (box[0] + box[3]) / 2
         p2 = (box[1] + box[2]) / 2
         p3 = (box[0] + box[1]) / 2
@@ -52,8 +51,6 @@ def get_pSalida(im, labels_seg, ultimoPSalida):
             # Al principio supongo que pSalida1 está en el borde derecho y pSalida2 en el izquierdo
             pSalida1 = [im.shape[1]-2, p2[1] + ((im.shape[1]-2-p2[0])*v[1])/(v[0])]
             pSalida2 = [0, p1[1] + ((0-p1[0])*v[1])/(v[0])]
-            # Visualizar la línea que une ambos puntos
-            # cv2.line(im,tuple(pSalida1),tuple(pSalida2),(0,0,255))
             # Los corrijo si se salen de los bordes de la imagen
             if pSalida1[1] < 0:
                 pSalida1 = [p2[0] + ((0-p2[1])*v[0])/(v[1]), 0]
@@ -63,6 +60,8 @@ def get_pSalida(im, labels_seg, ultimoPSalida):
                 pSalida2 = [p1[0] + ((0-2-p1[1])*v[0])/(v[1]), 0]
             elif pSalida2[1] > im.shape[0] - 2:
                 pSalida2 = [p1[0] + ((im.shape[0]-2-p1[1])*v[0])/(v[1]), im.shape[0] - 2]
+            # Visualizar la línea que une ambos puntos
+            cv2.line(im,tuple(pSalida1),tuple(pSalida2),(0,0,255))
 
             # Estimo la orientación de la flecha según qué mitad tenga más área
             markPts = np.argwhere(labels_seg == 2)
@@ -76,7 +75,7 @@ def get_pSalida(im, labels_seg, ultimoPSalida):
                 elif sa > 0:
                     mark2.append(pt)
 
-            # Visualizar loas mitades de la flecha
+            # Visualizar las mitades de la flecha
             # [ cv2.circle(im,tuple(pt),1,(255,0,0)) for pt in mark1 ]
             # [ cv2.circle(im,tuple(pt),1,(0,255,0)) for pt in mark2 ]
             if len(mark1) > len(mark2):
@@ -126,7 +125,7 @@ def get_bordes(im, labels_seg):
 
     return bordes
 
-# Devuelve el índice de la lista de bordes que repredsentan
+# Devuelve el índice de la lista de bordes que representan
 # la entrada de lal ínea dado una lista de bordes
 def get_entrada(im,bordes):
     yMax = [-1,-1]
