@@ -1,6 +1,6 @@
 # coding=UTF-8
 # Librerías externas
-import cv, cv2
+import cv2
 import numpy as np
 
 # Librerías internas
@@ -10,7 +10,7 @@ import geometry as geo
 def esCruce(im,labels_seg):
     # Hallo los contornos del fondo ignorando las marcas
     backImg = (labels_seg!=1).astype(np.uint8)*255
-    contList, hier = cv2.findContours(backImg,cv2.RETR_LIST,cv2.CHAIN_APPROX_NONE)
+    _, contList, _ = cv2.findContours(backImg,cv2.RETR_LIST,cv2.CHAIN_APPROX_NONE)
     contList = [cont for cont in contList if len(cont) > 100]
     # Visualizar los contornos
     cv2.drawContours(im, contList, -1, (0,0,255))

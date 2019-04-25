@@ -11,7 +11,7 @@
 # Diego Sánchez Lizuain, 150072
 
 # Librerías externas
-import cv, cv2
+import cv2
 from scipy.misc import imread, imsave
 from matplotlib import pyplot as plt
 import numpy as np
@@ -47,7 +47,7 @@ seg = seg.segQDA(data, labels)
 print("Tiempo de entrenamiento: " + str(time.time() - start) + " s.")
 
 # Inicio la captura de imagenes
-capture = cv2.VideoCapture("dataset/telefono/video.avi")
+capture = cv2.VideoCapture("videos/video2017-3.avi")
 
 # fourcc = cv2.cv.CV_FOURCC(*'XVID')
 # out = cv2.VideoWriter('videos/analisis.avi', fourcc, 24, (320,240), True)
