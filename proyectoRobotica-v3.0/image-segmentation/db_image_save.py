@@ -8,10 +8,10 @@ folder3 = "servicio/"
 folder4 = "telefono/"
 
 ################################
-folder = folder4
+folder = folder1
 ################################
 
-filename = "video.avi"
+filename = "video3.avi"
 
 cam = cv2.VideoCapture(0)
 width = int(cam.get(cv2.CAP_PROP_FRAME_WIDTH))

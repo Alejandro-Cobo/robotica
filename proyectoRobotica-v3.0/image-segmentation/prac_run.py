@@ -11,7 +11,7 @@
 # Diego Sánchez Lizuain, 150072
 
 # Librerías externas
-import cv, cv2
+import cv2
 from scipy.misc import imread, imsave
 from matplotlib import pyplot as plt
 import numpy as np
@@ -47,7 +47,7 @@ seg = seg.segQDA(data, labels)
 print("Tiempo de entrenamiento: " + str(time.time() - start) + " s.")
 
 # Inicio la captura de imagenes
-capture = cv2.VideoCapture("dataset/telefono/video.avi")
+capture = cv2.VideoCapture("videos/cruz/cruz.webm")
 
 # fourcc = cv2.cv.CV_FOURCC(*'XVID')
 # out = cv2.VideoWriter('videos/analisis.avi', fourcc, 24, (320,240), True)
@@ -64,7 +64,7 @@ while True:
     
     # Segmento una de cada dos imágenes
     im_count += 1
-    if im_count % 3 != 0:
+    if im_count % 5 != 0:
         continue
     
     # Si no hay más imágenes termino el bucle
@@ -86,7 +86,15 @@ while True:
     im2D = np.reshape(imNp, (imNp.shape[0]*imNp.shape[1],imNp.shape[2]))
     # Segmento la imagen
     labels_seg = np.reshape(seg.segmenta(im2D), (imDraw.shape[0], imDraw.shape[1]))
-    
+    markImg = (labels_seg==2).astype(np.uint8)*255
+    contList, hier = cv2.findContours(markImg,cv2.RETR_LIST,cv2.CHAIN_APPROX_NONE)
+    contList = [cont for cont in contList if len(cont) > 100]
+    if len(contList) > 0:
+        cont = contList[0]
+        # Visualizar los contornos de la flecha
+        cv2.drawContours(imDraw, contList, -1, (255,0,0))
+
+    """
     # Compruebo si estoy en un cruce
     enCruce = analisis.esCruce(imDraw,labels_seg)
     if enCruce:
@@ -100,6 +108,7 @@ while True:
     else:
         pSalida = None
         ultimoPSalida = None
+    
     
     # Hallo los puntos de la línea en el borde de la imagen
     bordes = analisis.get_bordes(imDraw,labels_seg)
@@ -118,14 +127,14 @@ while True:
         pOut = bordes[salida][len(bordes[salida])/2]
         # Pinto la líne aque une la entrada y la salida
         cv2.line(imDraw,tuple(pIn),tuple(pOut),(0,0,255,),2)
-    
+    """
     # genero la paleta de colores
-    paleta = np.array([[0,0,0],[0,0,255],[255,0,0]],dtype=np.uint8)
+    # paleta = np.array([[0,0,0],[0,0,255],[255,0,0]],dtype=np.uint8)
     # ahora pinto la imagen
-    imSeg = cv2.cvtColor(paleta[labels_seg],cv2.COLOR_RGB2BGR)
-    imCon = np.concatenate([img,imSeg],1)
-    cv2.imshow("Imagen segmentada", imCon)
-    # cv2.imshow("Imagen procesada", img)
+    # imSeg = cv2.cvtColor(paleta[labels_seg],cv2.COLOR_RGB2BGR)
+    # imCon = np.concatenate([img,imSeg],1)
+    # cv2.imshow("Imagen segmentada", imSeg)
+    cv2.imshow("Imagen procesada", img)
     # Guardo el vídeo mostrado por pantalla
     # out.write(img)
 
