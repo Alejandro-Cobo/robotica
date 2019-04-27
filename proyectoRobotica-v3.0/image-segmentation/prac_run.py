@@ -26,8 +26,8 @@ print("Pulsar Espacio para detener el vídeo o 'q' para terminar la ejecución")
 
 start = time.time()
 # Leo las imagenes de entrenamiento
-imNp = imread('imgs/linea.png')
-markImg = imread('imgs/lineaMarcada.png')
+imNp = imread('resources/imgs/linea.png')
+markImg = imread('resources/imgs/lineaMarcada.png')
 
 # Saco todos los puntos marcados en rojo/verde/azul
 data_marca = imNp[np.where(np.all(np.equal(markImg,(255,0,0)),2))]
@@ -47,7 +47,7 @@ seg = seg.segQDA(data, labels)
 print("Tiempo de entrenamiento: " + str(time.time() - start) + " s.")
 
 # Inicio la captura de imagenes
-capture = cv2.VideoCapture("dataset/videos/telefono/video.avi")
+capture = cv2.VideoCapture("resources/dataset/videos/telefono/video.avi")
 
 # fourcc = cv2.cv.CV_FOURCC(*'XVID')
 # out = cv2.VideoWriter('videos/analisis.avi', fourcc, 24, (320,240), True)
@@ -162,7 +162,7 @@ while True:
     # Guardo esta imagen para luego con todas ellas generar un video
     # cv2.imwrite("dataset/imgs/cruz/frame%02d.jpg" % save_im_count, cv2.cvtColor(paleta[labels_seg], cv2.COLOR_BGR2RGB))
     if record:
-        cv2.imwrite("dataset/imgs/telefono/img%02d.jpg" % save_im_count, img)
+        cv2.imwrite("resources/dataset/imgs/telefono/img%02d.jpg" % save_im_count, img)
         save_im_count += 1
 
     # times.append((time.time() - start))
