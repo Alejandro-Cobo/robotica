@@ -47,13 +47,15 @@ seg = seg.segQDA(data, labels)
 print("Tiempo de entrenamiento: " + str(time.time() - start) + " s.")
 
 # Inicio la captura de imagenes
-capture = cv2.VideoCapture("videos/cruz/cruz.webm")
+capture = cv2.VideoCapture("dataset/videos/telefono/video.avi")
 
 # fourcc = cv2.cv.CV_FOURCC(*'XVID')
 # out = cv2.VideoWriter('videos/analisis.avi', fourcc, 24, (320,240), True)
 
 # Ahora clasifico el video
 im_count = 0
+save_im_count = 165
+record = False
 times = []
 ultimoPSalida = None
 ultimaEntrada = None
@@ -63,10 +65,11 @@ while True:
     ret, img = capture.read()
     
     # Segmento una de cada dos imágenes
+    """
     im_count += 1
     if im_count % 5 != 0:
         continue
-    
+    """
     # Si no hay más imágenes termino el bucle
     if not ret:
         break
@@ -86,13 +89,17 @@ while True:
     im2D = np.reshape(imNp, (imNp.shape[0]*imNp.shape[1],imNp.shape[2]))
     # Segmento la imagen
     labels_seg = np.reshape(seg.segmenta(im2D), (imDraw.shape[0], imDraw.shape[1]))
+    
     markImg = (labels_seg==2).astype(np.uint8)*255
     contList, hier = cv2.findContours(markImg,cv2.RETR_LIST,cv2.CHAIN_APPROX_NONE)
-    contList = [cont for cont in contList if len(cont) > 100]
     if len(contList) > 0:
-        cont = contList[0]
-        # Visualizar los contornos de la flecha
-        cv2.drawContours(imDraw, contList, -1, (255,0,0))
+        cont = contList.index( max(contList, key=lambda x : len(x[0])) )
+        if len(contList[cont]) < 100:
+            continue
+        img = np.zeros((img.shape[0],img.shape[1]))
+        cv2.drawContours(img, contList, cont, (255,255,255),cv2.cv.CV_FILLED)
+    else:
+        continue
 
     """
     # Compruebo si estoy en un cruce
@@ -138,23 +145,29 @@ while True:
     # Guardo el vídeo mostrado por pantalla
     # out.write(img)
 
-    # Pulsar Espaco para detener el vídeo o 'q' para terminar la ejecución 
+    # Pulsar Espaco para detener el vídeo o 'q' para terminar la ejecución
+    
     k = cv2.waitKey(1)
     if k == ord(' '):
+        """
         cv2.putText(img, "Pausado en el fotograma " + str(im_count), (10,40), cv2.FONT_HERSHEY_PLAIN, 1, (255,0,0))
         cv2.imshow("Imagen procesada", img)
         k = cv2.waitKey(0)
+        """
+        record = not record
+        print(record)
     if k == ord('q'):
         break
-
+    
     # Guardo esta imagen para luego con todas ellas generar un video
-    # cv2.imwrite("frames/frame%02d.jpg" % im_count, cv2.cvtColor(paleta[labels_seg], cv2.COLOR_BGR2RGB))
+    # cv2.imwrite("dataset/imgs/cruz/frame%02d.jpg" % save_im_count, cv2.cvtColor(paleta[labels_seg], cv2.COLOR_BGR2RGB))
+    if record:
+        cv2.imwrite("dataset/imgs/telefono/img%02d.jpg" % save_im_count, img)
+        save_im_count += 1
 
-    times.append((time.time() - start))
+    # times.append((time.time() - start))
 
 # out.release()
 capture.release()
 cv2.destroyAllWindows()
-print("Tiempo medio de procesado de una imagen: " + str(np.mean(times)) + " s.")
-
-
+# print("Tiempo medio de procesado de una imagen: " + str(np.mean(times)) + " s.")
