@@ -21,6 +21,7 @@ import time
 import classif as seg
 import analisis
 import geometry as geo
+import symbol_recognition.binarize_image as bin
 
 print("Pulsar Espacio para detener el vídeo o 'q' para terminar la ejecución")
 
@@ -91,16 +92,9 @@ while True:
     labels_seg = np.reshape(seg.segmenta(im2D), (imDraw.shape[0], imDraw.shape[1]))
     
     markImg = (labels_seg==2).astype(np.uint8)*255
-    contList, hier = cv2.findContours(markImg,cv2.RETR_LIST,cv2.CHAIN_APPROX_NONE)
-    if len(contList) > 0:
-        cont = contList.index( max(contList, key=lambda x : len(x[0])) )
-        if len(contList[cont]) < 100:
-            continue
-        img = np.zeros((img.shape[0],img.shape[1]))
-        cv2.drawContours(img, contList, cont, (255,255,255),cv2.cv.CV_FILLED)
-    else:
+    img = bin.binarize(img, markImg)
+    if img is None:
         continue
-
     """
     # Compruebo si estoy en un cruce
     enCruce = analisis.esCruce(imDraw,labels_seg)
