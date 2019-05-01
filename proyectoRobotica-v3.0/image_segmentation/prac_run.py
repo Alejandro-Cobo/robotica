@@ -48,15 +48,13 @@ seg = seg.segQDA(data, labels)
 print("Tiempo de entrenamiento: " + str(time.time() - start) + " s.")
 
 # Inicio la captura de imagenes
-capture = cv2.VideoCapture("resources/dataset/videos/telefono/video.avi")
+capture = cv2.VideoCapture(0)
 
 # fourcc = cv2.cv.CV_FOURCC(*'XVID')
 # out = cv2.VideoWriter('videos/analisis.avi', fourcc, 24, (320,240), True)
 
 # Ahora clasifico el video
 im_count = 0
-save_im_count = 165
-record = False
 times = []
 ultimoPSalida = None
 ultimaEntrada = None
@@ -66,17 +64,16 @@ while True:
     ret, img = capture.read()
     
     # Segmento una de cada dos imágenes
-    """
     im_count += 1
-    if im_count % 5 != 0:
+    if im_count % 2 != 0:
         continue
-    """
+
     # Si no hay más imágenes termino el bucle
     if not ret:
         break
 
     # Segemtno solo una parte de la imagen
-    imDraw = img
+    imDraw = img[80:,:,:]
 
     # La pongo en formato numpy
     imNp = cv2.cvtColor(imDraw, cv2.COLOR_BGR2RGB)
@@ -90,12 +87,7 @@ while True:
     im2D = np.reshape(imNp, (imNp.shape[0]*imNp.shape[1],imNp.shape[2]))
     # Segmento la imagen
     labels_seg = np.reshape(seg.segmenta(im2D), (imDraw.shape[0], imDraw.shape[1]))
-    
-    markImg = (labels_seg==2).astype(np.uint8)*255
-    img = bin.binarize(img, markImg)
-    if img is None:
-        continue
-    """
+
     # Compruebo si estoy en un cruce
     enCruce = analisis.esCruce(imDraw,labels_seg)
     if enCruce:
@@ -128,14 +120,14 @@ while True:
         pOut = bordes[salida][len(bordes[salida])/2]
         # Pinto la líne aque une la entrada y la salida
         cv2.line(imDraw,tuple(pIn),tuple(pOut),(0,0,255,),2)
-    """
+    
     # genero la paleta de colores
     # paleta = np.array([[0,0,0],[0,0,255],[255,0,0]],dtype=np.uint8)
     # ahora pinto la imagen
     # imSeg = cv2.cvtColor(paleta[labels_seg],cv2.COLOR_RGB2BGR)
     # imCon = np.concatenate([img,imSeg],1)
     # cv2.imshow("Imagen segmentada", imSeg)
-    cv2.imshow("Imagen procesada", img)
+    cv2.imshow("Imagen procesada", imDraw)
     # Guardo el vídeo mostrado por pantalla
     # out.write(img)
 
@@ -143,25 +135,18 @@ while True:
     
     k = cv2.waitKey(1)
     if k == ord(' '):
-        """
         cv2.putText(img, "Pausado en el fotograma " + str(im_count), (10,40), cv2.FONT_HERSHEY_PLAIN, 1, (255,0,0))
         cv2.imshow("Imagen procesada", img)
         k = cv2.waitKey(0)
-        """
-        record = not record
-        print(record)
     if k == ord('q'):
         break
     
     # Guardo esta imagen para luego con todas ellas generar un video
     # cv2.imwrite("dataset/imgs/cruz/frame%02d.jpg" % save_im_count, cv2.cvtColor(paleta[labels_seg], cv2.COLOR_BGR2RGB))
-    if record:
-        cv2.imwrite("resources/dataset/imgs/telefono/img%02d.jpg" % save_im_count, img)
-        save_im_count += 1
 
-    # times.append((time.time() - start))
+    times.append((time.time() - start))
 
 # out.release()
 capture.release()
 cv2.destroyAllWindows()
-# print("Tiempo medio de procesado de una imagen: " + str(np.mean(times)) + " s.")
+print("Tiempo medio de procesado de una imagen: " + str(np.mean(times)) + " s.")
