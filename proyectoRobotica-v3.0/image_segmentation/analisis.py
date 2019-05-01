@@ -13,7 +13,7 @@ def esCruce(im,labels_seg):
     contList, hier = cv2.findContours(backImg,cv2.RETR_LIST,cv2.CHAIN_APPROX_NONE)
     contList = [cont for cont in contList if len(cont) > 100]
     # Visualizar los contornos
-    cv2.drawContours(im, contList, -1, (0,0,255))
+    # cv2.drawContours(im, contList, -1, (0,0,255))
     # Número de agujeros
     nHoles = len(contList)
     return nHoles > 2
@@ -28,7 +28,7 @@ def get_pSalida(im, labels_seg, ultimoPSalida):
     if len(contList) > 0:
         cont = contList[0]
         # Visualizar los contornos de la flecha
-        cv2.drawContours(im, contList, -1, (255,0,0))
+        # cv2.drawContours(im, contList, -1, (255,0,0))
         # Hallo la elipse
         rect = cv2.fitEllipse(cont)
         box = cv2.cv.BoxPoints(rect)
@@ -61,7 +61,7 @@ def get_pSalida(im, labels_seg, ultimoPSalida):
             elif pSalida2[1] > im.shape[0] - 2:
                 pSalida2 = [p1[0] + ((im.shape[0]-2-p1[1])*v[0])/(v[1]), im.shape[0] - 2]
             # Visualizar la línea que une ambos puntos
-            cv2.line(im,tuple(pSalida1),tuple(pSalida2),(0,0,255))
+            # cv2.line(im,tuple(pSalida1),tuple(pSalida2),(0,0,255))
 
             # Estimo la orientación de la flecha según qué mitad tenga más área
             markPts = np.argwhere(labels_seg == 2)

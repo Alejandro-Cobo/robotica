@@ -70,8 +70,7 @@ while True:
     except:
         continue
     
-    markImg = (labels_seg==2).astype(np.uint8)*255
-    img = bin.binarize(img, markImg)
+    img = bin.binarize(img, labels_seg)
     if img is None:
         continue
     

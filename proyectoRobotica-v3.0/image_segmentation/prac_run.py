@@ -22,13 +22,15 @@ import classif as seg
 import analisis
 import geometry as geo
 import symbol_recognition.binarize_image as bin
+import symbol_recognition.hu_moments as hu
+import symbol_recognition.mahalanobis as mahalanobis
 
 print("Pulsar Espacio para detener el vídeo o 'q' para terminar la ejecución")
 
 start = time.time()
 # Leo las imagenes de entrenamiento
-imNp = imread('resources/imgs/linea.png')
-markImg = imread('resources/imgs/lineaMarcada.png')
+imNp = imread('resources/imgs/linea3.png')
+markImg = imread('resources/imgs/lineaMarcada3.png')
 
 # Saco todos los puntos marcados en rojo/verde/azul
 data_marca = imNp[np.where(np.all(np.equal(markImg,(255,0,0)),2))]
@@ -45,10 +47,22 @@ labels = np.concatenate([labels_marca,labels_fondo, labels_linea])
 
 # Creo y entreno el segmentador
 seg = seg.segQDA(data, labels)
+
+# Creo y entreno el reconocedor de símbolos
+maha = mahalanobis.classifMahalanobis()
+data, labels = hu.get_db_hu()
+maha.fit(data, labels)
+
+# Lista de símbolos a reconocer
+symbols = ["Cruz", "Escaleras", "Servicio", "Telefono"]
+
 print("Tiempo de entrenamiento: " + str(time.time() - start) + " s.")
 
 # Inicio la captura de imagenes
-capture = cv2.VideoCapture(0)
+capture = cv2.VideoCapture("resources/videos/dynamic_test_1.webm")
+
+cv2.namedWindow('Imagen procesada',cv2.WINDOW_NORMAL)
+cv2.resizeWindow('Imagen procesada', 720,405)
 
 # fourcc = cv2.cv.CV_FOURCC(*'XVID')
 # out = cv2.VideoWriter('videos/analisis.avi', fourcc, 24, (320,240), True)
@@ -73,7 +87,8 @@ while True:
         break
 
     # Segemtno solo una parte de la imagen
-    imDraw = img[80:,:,:]
+    # img = img[:,:img.shape[1]-80,:]
+    imDraw = img
 
     # La pongo en formato numpy
     imNp = cv2.cvtColor(imDraw, cv2.COLOR_BGR2RGB)
@@ -85,24 +100,32 @@ while True:
     imNp = cv2.GaussianBlur(imNp, (0,0), 1)
     # Adapto la imagen al formato de entrada del segmentador
     im2D = np.reshape(imNp, (imNp.shape[0]*imNp.shape[1],imNp.shape[2]))
+    im2D = np.nan_to_num(im2D)
     # Segmento la imagen
     labels_seg = np.reshape(seg.segmenta(im2D), (imDraw.shape[0], imDraw.shape[1]))
 
+
     # Compruebo si estoy en un cruce
     enCruce = analisis.esCruce(imDraw,labels_seg)
+    """
     if enCruce:
         cv2.putText(img, "Cruce detectado", (10,20), cv2.FONT_HERSHEY_PLAIN, 1, (255,0,0))
     else:
         cv2.putText(img, "Sin cruces", (10,20), cv2.FONT_HERSHEY_PLAIN, 1, (255,0,0))
+    """
     
     # Busco la flecha si estoy en un cruce
     if enCruce:
-        pSalida,ultimoPSalida = analisis.get_pSalida(imDraw,labels_seg,ultimoPSalida)
+        pSalida, ultimoPSalida = analisis.get_pSalida(imDraw, labels_seg, ultimoPSalida)
     else:
         pSalida = None
         ultimoPSalida = None
-    
-    
+        bin_img = bin.binarize(img, labels_seg)
+        if bin_img is not None:
+            hu_moments = hu.get_hu(bin_img)
+            symbol = symbols[ int(maha.predict(hu_moments)) ]
+            cv2.putText(img, symbol, (10, 40), cv2.FONT_HERSHEY_DUPLEX, 1, (0,0,0))
+    """
     # Hallo los puntos de la línea en el borde de la imagen
     bordes = analisis.get_bordes(imDraw,labels_seg)
 
@@ -120,14 +143,13 @@ while True:
         pOut = bordes[salida][len(bordes[salida])/2]
         # Pinto la líne aque une la entrada y la salida
         cv2.line(imDraw,tuple(pIn),tuple(pOut),(0,0,255,),2)
-    
+    """
     # genero la paleta de colores
     # paleta = np.array([[0,0,0],[0,0,255],[255,0,0]],dtype=np.uint8)
     # ahora pinto la imagen
     # imSeg = cv2.cvtColor(paleta[labels_seg],cv2.COLOR_RGB2BGR)
-    # imCon = np.concatenate([img,imSeg],1)
     # cv2.imshow("Imagen segmentada", imSeg)
-    cv2.imshow("Imagen procesada", imDraw)
+    cv2.imshow("Imagen procesada", img)
     # Guardo el vídeo mostrado por pantalla
     # out.write(img)
 
@@ -135,14 +157,11 @@ while True:
     
     k = cv2.waitKey(1)
     if k == ord(' '):
-        cv2.putText(img, "Pausado en el fotograma " + str(im_count), (10,40), cv2.FONT_HERSHEY_PLAIN, 1, (255,0,0))
+        cv2.putText(img, "Pausado en el fotograma " + str(im_count), (10,60), cv2.FONT_HERSHEY_PLAIN, 1, (255,0,0))
         cv2.imshow("Imagen procesada", img)
         k = cv2.waitKey(0)
     if k == ord('q'):
         break
-    
-    # Guardo esta imagen para luego con todas ellas generar un video
-    # cv2.imwrite("dataset/imgs/cruz/frame%02d.jpg" % save_im_count, cv2.cvtColor(paleta[labels_seg], cv2.COLOR_BGR2RGB))
 
     times.append((time.time() - start))
 
