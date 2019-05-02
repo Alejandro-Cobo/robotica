@@ -6,14 +6,19 @@ import numpy as np
 # Librerías internas
 import geometry as geo
 
+# Constantes numéricas
+CONT_THRES = 100
+BORD_THRES = 5
+DIST_THRES = 50
+
 # Devuelve True si hay un cruce o bifurcación y False en otro caso
 def esCruce(im,labels_seg):
     # Hallo los contornos del fondo ignorando las marcas
     backImg = (labels_seg!=1).astype(np.uint8)*255
     contList, hier = cv2.findContours(backImg,cv2.RETR_LIST,cv2.CHAIN_APPROX_NONE)
-    contList = [cont for cont in contList if len(cont) > 100]
+    contList = [cont for cont in contList if len(cont) > CONT_THRES]
     # Visualizar los contornos
-    # cv2.drawContours(im, contList, -1, (0,0,255))
+    cv2.drawContours(im, contList, -1, (0,0,255))
     # Número de agujeros
     nHoles = len(contList)
     return nHoles > 2
@@ -24,11 +29,11 @@ def get_pSalida(im, labels_seg, ultimoPSalida):
     # Hallo los contornos de la flecha
     markImg = (labels_seg==2).astype(np.uint8)*255
     contList, hier = cv2.findContours(markImg,cv2.RETR_LIST,cv2.CHAIN_APPROX_NONE)
-    contList = [cont for cont in contList if len(cont) > 100]
+    contList = [cont for cont in contList if len(cont) > CONT_THRES]
     if len(contList) > 0:
-        cont = contList[0]
+        cont = max(contList, key=lambda x : len(x))
         # Visualizar los contornos de la flecha
-        # cv2.drawContours(im, contList, -1, (255,0,0))
+        cv2.drawContours(im, cont, -1, (255,0,0))
         # Hallo la elipse
         rect = cv2.fitEllipse(cont)
         box = cv2.cv.BoxPoints(rect)
@@ -82,12 +87,11 @@ def get_pSalida(im, labels_seg, ultimoPSalida):
                 pSalida = pSalida1
             else:
                 pSalida = pSalida2
-            if ultimoPSalida and geo.dist(pSalida, ultimoPSalida) > 200:
+            if (ultimoPSalida is not None) and (geo.dist(pSalida, ultimoPSalida) > DIST_THRES):
                 pSalida = ultimoPSalida
-            # Pinto la línea que sale de la flecha y llega al punto de salida
-            # cv2.line(im,tuple((box[0] + box[2]) / 2),tuple(pSalida),(0,0,255),2)
-            ultimoPSalida = pSalida
-    return pSalida,ultimoPSalida
+            # Visualizar la línea que indica la orientación de la flecha
+            cv2.line(im,tuple((box[0] + box[2]) / 2),tuple(pSalida),(255,0,0),1)
+    return pSalida
 
 # Devuelve los píxeles del contorno de la línea que se encuentran 
 # en los bordes de la imagen
@@ -95,7 +99,7 @@ def get_bordes(im, labels_seg):
     # Hallo los puntos de la línea en el borde de la imagen
     linImg = (labels_seg==1).astype(np.uint8)*255
     contList, hier = cv2.findContours(linImg,cv2.RETR_LIST,cv2.CHAIN_APPROX_NONE)
-    contList = [cont for cont in contList if len(cont) > 100]
+    contList = [cont for cont in contList if len(cont) > CONT_THRES]
     bordes = []
     for cont in contList:
         found = False
@@ -112,29 +116,34 @@ def get_bordes(im, labels_seg):
 
             else:
                 found = False
-    bordes = [ borde for borde in bordes if len(borde) > 5 ]
+    bordes = [ borde for borde in bordes if len(borde) > BORD_THRES ]
 
-    # Caso particular en el que, si un borde se extiende sobre la 
-    # esquina superior izquierda de la imagen se considera como dos
-    # bordes distintos
-    xMin = min(bordes[0],key=lambda x : x[1])
-    yMin = min(bordes[-1],key = lambda x: x[0])
-    if xMin[0] == 1 and xMin[1] == 1 and yMin[0] == 2 and yMin[1] == 1:
-        bordes[0] += bordes[-1]
-        del bordes[-1]
+    if len(bordes) > 0:
+        # Caso particular en el que, si un borde se extiende sobre la 
+        # esquina superior izquierda de la imagen, se considera como dos
+        # bordes distintos y hay que volver a juntarlos
+        xMin = min(bordes[0],key=lambda x : x[1])
+        yMin = min(bordes[-1],key = lambda x: x[0])
+        if xMin[0] == 1 and xMin[1] == 1 and yMin[0] == 2 and yMin[1] == 1:
+            bordes[0] += bordes[-1]
+            del bordes[-1]
 
     return bordes
 
 # Devuelve el índice de la lista de bordes que representan
 # la entrada de lal ínea dado una lista de bordes
-def get_entrada(im,bordes):
+def get_entrada(im, bordes, ultimaEntrada):
+    entrada = -1
     yMax = [-1,-1]
     for i in range(len(bordes)):
-        pt = max(bordes[i], key=lambda x : x[1])
+        pt = bordes[i][len(bordes[i])/2]
         if pt[1] > yMax[1]:
             yMax = pt
             entrada = i
+        # En caso de empate, elegir el borde más cercano al centro
         elif pt[1] == yMax[1] and abs(pt[0]-im.shape[1]/2) < abs(yMax[0]-im.shape[1]/2):
+        # Alternativa: elegir el borde más cercano al último borde
+        # elif pt[1] == yMax[1] and geo.dist(pt, ultimaEntrada) < geo.dist(yMax, ultimaEntrada):
             yMax = pt
             entrada = i
     return entrada
@@ -142,16 +151,23 @@ def get_entrada(im,bordes):
 # Devuelve el índice de la lista de bordes que repredsentan
 # la salida de lal ínea dado una lista de bordes.
 # Devuelve -1 si está en un cruce y no hay punto de salida
-def get_salida(bordes,entrada,pSalida):
+def get_salida(bordes, entrada, pSalida, ultimaSalida):
+    salida = -1
     if (len(bordes)==2):
-        return (entrada+1)%2
-    elif pSalida:
-        minDist = -1
-        for i in range(len(bordes)):
-            pt = min(bordes[i],key=lambda x : geo.dist(x,pSalida))
-            d = geo.dist(pt, pSalida)
-            if minDist==-1 or d < minDist:
-                salida = i
-                minDist = d
-        return salida
-    return -1
+        salida =  (entrada+1)%2
+    elif pSalida is not None:
+        salida = _get_closest_border(bordes, pSalida)
+    elif ultimaSalida is not None:
+        salida = _get_closest_border(bordes, ultimaSalida)
+    return salida
+
+# Devuelve el índice del borde más cercano al punto p
+def _get_closest_border(bordes, p):
+    minDist = -1
+    for i in range(len(bordes)):
+        pt = bordes[i][len(bordes[i])/2]
+        d = geo.dist(pt, p)
+        if minDist == -1 or d < minDist:
+            salida = i
+            minDist = d
+    return salida

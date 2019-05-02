@@ -7,9 +7,9 @@ def binarize(img, labels_seg):
     if len(contList) > 0:
             cont = contList.index( max(contList, key=lambda x : len(x[0])) )
             if len(contList[cont]) < 100:
-                return None
+                return None, None
             img = np.zeros((img.shape[0],img.shape[1]))
             cv2.drawContours(img, contList, cont, (255,255,255),cv2.cv.CV_FILLED)
-            return img
+            return img, contList[cont]
     else:
-            return None
+            return None, None

@@ -29,13 +29,13 @@ print("Pulsar Espacio para detener el vídeo o 'q' para terminar la ejecución")
 
 start = time.time()
 # Leo las imagenes de entrenamiento
-imNp = imread('resources/imgs/linea3.png')
-markImg = imread('resources/imgs/lineaMarcada3.png')
+trImg = imread('resources/imgs/tr_img.png')
+trImgPaint = imread('resources/imgs/tr_img_paint.png')
 
 # Saco todos los puntos marcados en rojo/verde/azul
-data_marca = imNp[np.where(np.all(np.equal(markImg,(255,0,0)),2))]
-data_fondo = imNp[np.where(np.all(np.equal(markImg,(0,255,0)),2))]
-data_linea = imNp[np.where(np.all(np.equal(markImg,(0,0,255)),2))]
+data_marca = trImg[np.where(np.all(np.equal(trImgPaint,(255,0,0)),2))]
+data_fondo = trImg[np.where(np.all(np.equal(trImgPaint,(0,255,0)),2))]
+data_linea = trImg[np.where(np.all(np.equal(trImgPaint,(0,0,255)),2))]
 
 labels_marca = np.zeros(data_marca.shape[0],np.int8) + 2
 labels_fondo = np.zeros(data_fondo.shape[0],np.int8)
@@ -53,33 +53,37 @@ maha = mahalanobis.classifMahalanobis()
 data, labels = hu.get_db_hu()
 maha.fit(data, labels)
 
+print("Tiempo de entrenamiento: " + str(time.time() - start) + " s.")
+
 # Lista de símbolos a reconocer
 symbols = ["Cruz", "Escaleras", "Servicio", "Telefono"]
 
-print("Tiempo de entrenamiento: " + str(time.time() - start) + " s.")
-
 # Inicio la captura de imagenes
-capture = cv2.VideoCapture("resources/videos/dynamic_test_1.webm")
+capture = cv2.VideoCapture("resources/videos/dynamic_test_1.mp4")
 
-cv2.namedWindow('Imagen procesada',cv2.WINDOW_NORMAL)
-cv2.resizeWindow('Imagen procesada', 720,405)
-
+# Guardar vídeo
 # fourcc = cv2.cv.CV_FOURCC(*'XVID')
-# out = cv2.VideoWriter('videos/analisis.avi', fourcc, 24, (320,240), True)
+# out = cv2.VideoWriter('resources/videos/reconocimiento_de_simbolos.avi', fourcc, 30, (352, 540), True)
 
 # Ahora clasifico el video
+# Contador de frames
 im_count = 0
+# Lista de tiempos de cada iteración del bucle
 times = []
+# Último punto indicado por una flecha en un cruce
 ultimoPSalida = None
+# Punto en la mitad del último contorno de entrada
 ultimaEntrada = None
+# Punto en la mitad del último contorno de salida
+ultimaSalida = None
 while True:
     start = time.time()
 
     ret, img = capture.read()
     
     # Segmento una de cada dos imágenes
-    im_count += 1
-    if im_count % 2 != 0:
+    im_count = (im_count + 1) % 2
+    if im_count == 0:
         continue
 
     # Si no hay más imágenes termino el bucle
@@ -87,9 +91,8 @@ while True:
         break
 
     # Segemtno solo una parte de la imagen
-    # img = img[:,:img.shape[1]-80,:]
-    imDraw = img
-
+    imDraw = img[70:,:,:]
+    
     # La pongo en formato numpy
     imNp = cv2.cvtColor(imDraw, cv2.COLOR_BGR2RGB)
 
@@ -104,48 +107,55 @@ while True:
     # Segmento la imagen
     labels_seg = np.reshape(seg.segmenta(im2D), (imDraw.shape[0], imDraw.shape[1]))
 
-
     # Compruebo si estoy en un cruce
     enCruce = analisis.esCruce(imDraw,labels_seg)
-    """
-    if enCruce:
-        cv2.putText(img, "Cruce detectado", (10,20), cv2.FONT_HERSHEY_PLAIN, 1, (255,0,0))
-    else:
-        cv2.putText(img, "Sin cruces", (10,20), cv2.FONT_HERSHEY_PLAIN, 1, (255,0,0))
-    """
     
     # Busco la flecha si estoy en un cruce
     if enCruce:
-        pSalida, ultimoPSalida = analisis.get_pSalida(imDraw, labels_seg, ultimoPSalida)
+        cv2.putText(img, "Cruce detectado", (10,20), cv2.FONT_HERSHEY_PLAIN, 1, (0,0,0))
+        pSalida = analisis.get_pSalida(imDraw, labels_seg, ultimoPSalida)
+        ultimoPSalida = pSalida
     else:
+        cv2.putText(img, "Sin cruces", (10,20), cv2.FONT_HERSHEY_PLAIN, 1, (0,0,0))
         pSalida = None
         ultimoPSalida = None
-        bin_img = bin.binarize(img, labels_seg)
+        # Reconocimiento de símbolos
+        # Binarizo la imagen
+        bin_img, cont = bin.binarize(img, labels_seg)
         if bin_img is not None:
+            # Visualizar los contornos del símbolo
+            cv2.drawContours(imDraw, cont, -1, (255,0,0))
+            # Calculo los momentos de Hu
             hu_moments = hu.get_hu(bin_img)
+            # Clasifico el símbolo con la distancia de Mahalanobis
             symbol = symbols[ int(maha.predict(hu_moments)) ]
-            cv2.putText(img, symbol, (10, 40), cv2.FONT_HERSHEY_DUPLEX, 1, (0,0,0))
-    """
+            cv2.putText(img, "Simbolo detectado: " + symbol,(10,40), cv2.FONT_HERSHEY_PLAIN, 1, (0,0,0))
+    
     # Hallo los puntos de la línea en el borde de la imagen
     bordes = analisis.get_bordes(imDraw,labels_seg)
 
     # Determino la entrada de la línea
-    entrada = analisis.get_entrada(imDraw,bordes)
+    entrada = analisis.get_entrada(imDraw, bordes, ultimaEntrada)
+    if entrada == -1:
+        ultimaEntrada = None
+        continue
+    ultimaEntrada = bordes[entrada][len(bordes[entrada])/2]
     # Punto medio
     pIn = bordes[entrada][len(bordes[entrada])/2]
-    # Pinto los píxeles de entrada en verde
+    # Visualizar los píxeles de entrada en verde
     [ cv2.circle(imDraw,tuple(pt),2,(0,255,0),1) for pt in bordes[entrada] ]
     # Determino la salida de la línea
-    salida = analisis.get_salida(bordes,entrada,pSalida)
+    salida = analisis.get_salida(bordes, entrada, pSalida, ultimaSalida)
+    ultimaSalida = None
     if salida != -1:
-        # Pinto los píxeles salida en rojo
+        ultimaSalida = bordes[salida][len(bordes[salida])/2]
+        # Visualizar los píxeles de salida en rojo
         [ cv2.circle(imDraw,tuple(pt),2,(0,0,255),1) for pt in bordes[salida] ]
         pOut = bordes[salida][len(bordes[salida])/2]
-        # Pinto la líne aque une la entrada y la salida
-        cv2.line(imDraw,tuple(pIn),tuple(pOut),(0,0,255,),2)
-    """
+        # Visualizar la línea que une la entrada y la salida
+        # cv2.line(imDraw,tuple(pIn),tuple(pOut),(0,0,255,),2)
     # genero la paleta de colores
-    # paleta = np.array([[0,0,0],[0,0,255],[255,0,0]],dtype=np.uint8)
+    paleta = np.array([[0,0,0],[0,0,255],[255,0,0]],dtype=np.uint8)
     # ahora pinto la imagen
     # imSeg = cv2.cvtColor(paleta[labels_seg],cv2.COLOR_RGB2BGR)
     # cv2.imshow("Imagen segmentada", imSeg)
@@ -154,15 +164,14 @@ while True:
     # out.write(img)
 
     # Pulsar Espaco para detener el vídeo o 'q' para terminar la ejecución
-    
     k = cv2.waitKey(1)
     if k == ord(' '):
-        cv2.putText(img, "Pausado en el fotograma " + str(im_count), (10,60), cv2.FONT_HERSHEY_PLAIN, 1, (255,0,0))
-        cv2.imshow("Imagen procesada", img)
+        cv2.putText(img, "Video pausado", (10,60), cv2.FONT_HERSHEY_PLAIN, 1, (0,0,0))
+        # cv2.imshow("Imagen procesada", img)
         k = cv2.waitKey(0)
     if k == ord('q'):
         break
-
+    
     times.append((time.time() - start))
 
 # out.release()
