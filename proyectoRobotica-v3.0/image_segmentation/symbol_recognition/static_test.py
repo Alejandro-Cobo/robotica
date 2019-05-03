@@ -8,7 +8,7 @@ import mahalanobis
 import cv2
 import binarize_image as bin
 
-data, labels = hu.get_db_hu()
+data, labels = hu.get_db()
 loo = cv.LeaveOneOut(len(labels))
 
 # 1-NN

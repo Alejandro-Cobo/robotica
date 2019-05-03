@@ -50,7 +50,7 @@ seg = seg.segQDA(data, labels)
 
 # Creo y entreno el reconocedor de símbolos
 maha = mahalanobis.classifMahalanobis()
-data, labels = hu.get_db_hu()
+data, labels = hu.get_db()
 maha.fit(data, labels)
 
 print("Tiempo de entrenamiento: " + str(time.time() - start) + " s.")
@@ -89,9 +89,9 @@ while True:
     # Si no hay más imágenes termino el bucle
     if not ret:
         break
-
+    
     # Segemtno solo una parte de la imagen
-    imDraw = img[70:,:,:]
+    imDraw = img
     
     # La pongo en formato numpy
     imNp = cv2.cvtColor(imDraw, cv2.COLOR_BGR2RGB)
@@ -106,11 +106,12 @@ while True:
     im2D = np.nan_to_num(im2D)
     # Segmento la imagen
     labels_seg = np.reshape(seg.segmenta(im2D), (imDraw.shape[0], imDraw.shape[1]))
-
+    
     # Compruebo si estoy en un cruce
     enCruce = analisis.esCruce(imDraw,labels_seg)
     
     # Busco la flecha si estoy en un cruce
+    
     if enCruce:
         cv2.putText(img, "Cruce detectado", (10,20), cv2.FONT_HERSHEY_PLAIN, 1, (0,0,0))
         pSalida = analisis.get_pSalida(imDraw, labels_seg, ultimoPSalida)
@@ -119,18 +120,19 @@ while True:
         cv2.putText(img, "Sin cruces", (10,20), cv2.FONT_HERSHEY_PLAIN, 1, (0,0,0))
         pSalida = None
         ultimoPSalida = None
+    
         # Reconocimiento de símbolos
         # Binarizo la imagen
-        bin_img, cont = bin.binarize(img, labels_seg)
-        if bin_img is not None:
+        imBin, cont = bin.binarize(labels_seg)
+        if cont is not None:
             # Visualizar los contornos del símbolo
             cv2.drawContours(imDraw, cont, -1, (255,0,0))
             # Calculo los momentos de Hu
-            hu_moments = hu.get_hu(bin_img)
+            hu_moments = hu.get_hu(imBin)
             # Clasifico el símbolo con la distancia de Mahalanobis
             symbol = symbols[ int(maha.predict(hu_moments)) ]
-            cv2.putText(img, "Simbolo detectado: " + symbol,(10,40), cv2.FONT_HERSHEY_PLAIN, 1, (0,0,0))
-    
+            cv2.putText(img, symbol,(10,40), cv2.FONT_HERSHEY_PLAIN, 1, (0,0,0))
+
     # Hallo los puntos de la línea en el borde de la imagen
     bordes = analisis.get_bordes(imDraw,labels_seg)
 
@@ -154,12 +156,18 @@ while True:
         pOut = bordes[salida][len(bordes[salida])/2]
         # Visualizar la línea que une la entrada y la salida
         # cv2.line(imDraw,tuple(pIn),tuple(pOut),(0,0,255,),2)
-    # genero la paleta de colores
-    paleta = np.array([[0,0,0],[0,0,255],[255,0,0]],dtype=np.uint8)
-    # ahora pinto la imagen
+    
+    # Visualizar la segmentación
+    # paleta = np.array([[0,0,0],[0,0,255],[255,0,0]],dtype=np.uint8)
     # imSeg = cv2.cvtColor(paleta[labels_seg],cv2.COLOR_RGB2BGR)
     # cv2.imshow("Imagen segmentada", imSeg)
+
+    # Visualizar la binarización de la imagen
+    # cv2.imshow("Imagen binarizada", imBin)
+
+    # Visualizar el análisis
     cv2.imshow("Imagen procesada", img)
+
     # Guardo el vídeo mostrado por pantalla
     # out.write(img)
 
@@ -167,7 +175,7 @@ while True:
     k = cv2.waitKey(1)
     if k == ord(' '):
         cv2.putText(img, "Video pausado", (10,60), cv2.FONT_HERSHEY_PLAIN, 1, (0,0,0))
-        # cv2.imshow("Imagen procesada", img)
+        cv2.imshow("Imagen procesada", img)
         k = cv2.waitKey(0)
     if k == ord('q'):
         break
