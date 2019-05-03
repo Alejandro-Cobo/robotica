@@ -63,7 +63,7 @@ capture = cv2.VideoCapture("resources/videos/dynamic_test_1.mp4")
 
 # Guardar vídeo
 # fourcc = cv2.cv.CV_FOURCC(*'XVID')
-# out = cv2.VideoWriter('resources/videos/reconocimiento_de_simbolos.avi', fourcc, 30, (352, 540), True)
+# out = cv2.VideoWriter('resources/videos/reconocimiento_de_simbolos.avi', fourcc, 30, (352,440), True)
 
 # Ahora clasifico el video
 # Contador de frames
@@ -91,7 +91,7 @@ while True:
         break
     
     # Segemtno solo una parte de la imagen
-    imDraw = img
+    imDraw = img[img.shape[0]/4:,:,:]
     
     # La pongo en formato numpy
     imNp = cv2.cvtColor(imDraw, cv2.COLOR_BGR2RGB)
@@ -111,7 +111,6 @@ while True:
     enCruce = analisis.esCruce(imDraw,labels_seg)
     
     # Busco la flecha si estoy en un cruce
-    
     if enCruce:
         cv2.putText(img, "Cruce detectado", (10,20), cv2.FONT_HERSHEY_PLAIN, 1, (0,0,0))
         pSalida = analisis.get_pSalida(imDraw, labels_seg, ultimoPSalida)
@@ -120,7 +119,7 @@ while True:
         cv2.putText(img, "Sin cruces", (10,20), cv2.FONT_HERSHEY_PLAIN, 1, (0,0,0))
         pSalida = None
         ultimoPSalida = None
-    
+
         # Reconocimiento de símbolos
         # Binarizo la imagen
         imBin, cont = bin.binarize(labels_seg)
@@ -156,7 +155,7 @@ while True:
         pOut = bordes[salida][len(bordes[salida])/2]
         # Visualizar la línea que une la entrada y la salida
         # cv2.line(imDraw,tuple(pIn),tuple(pOut),(0,0,255,),2)
-    
+
     # Visualizar la segmentación
     # paleta = np.array([[0,0,0],[0,0,255],[255,0,0]],dtype=np.uint8)
     # imSeg = cv2.cvtColor(paleta[labels_seg],cv2.COLOR_RGB2BGR)
@@ -170,7 +169,7 @@ while True:
 
     # Guardo el vídeo mostrado por pantalla
     # out.write(img)
-
+    
     # Pulsar Espaco para detener el vídeo o 'q' para terminar la ejecución
     k = cv2.waitKey(1)
     if k == ord(' '):

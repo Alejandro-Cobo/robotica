@@ -14,7 +14,7 @@ def get_db():
     labels = np.empty(len(FOLDERS)*N_IMGS)
 
     for i in range(len(FOLDERS)):
-        images = [cv2.imread(file,cv2.IMREAD_GRAYSCALE) for file in glob.glob("resources/dataset/imgs/"+FOLDERS[i]+"/*.jpg")]
+        images = [cv2.imread(file,cv2.IMREAD_GRAYSCALE) for file in glob.glob("resources/dataset/"+FOLDERS[i]+"/*.jpg")]
         # moments = [cv2.moments(image,True) for image in images]
         # hu_moments = np.array([cv2.HuMoments(moment).T[0] for moment in moments])
         hu_moments = [get_hu(img) for img in images]

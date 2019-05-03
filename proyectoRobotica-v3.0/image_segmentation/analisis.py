@@ -12,7 +12,7 @@ BORD_THRES = 5
 DIST_THRES = 50
 
 # Devuelve True si hay un cruce o bifurcación y False en otro caso
-def esCruce(im,labels_seg):
+def esCruce(im, labels_seg):
     # Hallo los contornos del fondo ignorando las marcas
     backImg = (labels_seg!=1).astype(np.uint8)*255
     contList, hier = cv2.findContours(backImg,cv2.RETR_LIST,cv2.CHAIN_APPROX_NONE)
