@@ -14,7 +14,7 @@ loo = cv.LeaveOneOut(len(labels))
 # 1-NN
 errors = 0.0
 for tr, te in loo:
-    knn = sklearn.neighbors.KNeighborsClassifier(1)
+    knn = sklearn.neighbors.KNeighborsClassifier(1,algorithm='brute',metric='euclidean')
     knn = knn.fit(data[tr],labels[tr])
     ypred = knn.predict(data[te])
     errors += ypred != labels[te]

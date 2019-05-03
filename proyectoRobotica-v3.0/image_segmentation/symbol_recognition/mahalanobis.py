@@ -11,7 +11,7 @@ class classifMahalanobis:
         self.invcov = np.empty((x.shape[1],x.shape[1],len(self.labels)))
         for i in xrange(len(self.labels)):
             self.means[i] = np.mean(x[y == self.labels[i]], axis=0)
-            self.invcov[:,:,i] = np.linalg.pinv( np.cov(x[y==self.labels[i]],rowvar=False) )
+            self.invcov[:,:,i] = np.linalg.inv( np.cov(x[y==self.labels[i]],rowvar=False) )
         return self
     
     def predict(self,x):
