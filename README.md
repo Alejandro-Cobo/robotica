@@ -8,7 +8,7 @@ Moodle de la asignatura: https://moodle.upm.es/titulaciones/oficiales/course/vie
 - [Código fuente](proyectoRobotica-v3.0/).
   - [image-segmentation](proyectoRobotica-v3.0/image-segmentation): test del módulo de procesamiento de imágenes y herramientas para crear imágenes de entrenamiento.
   - [lib](proyectoRobotica-v3.0/lib): librería con código auxiliar de procesamiento de imágenes y reconocimiento de símbolos.
-  - [resources](proyectoRobotica-v3.0/resources): contiene el [dataset de entrenamiento](proyectoRobotica-v3.0/resources/dataset) del reconocedor de símbolos, las [imágenes de entrenamiento](proyectoRobotica-v3.0/resources/imgs) del segmentador de imágenes y varios [vdeos](proyectoRobotica-v3.0/resources/videos/) del recorrido del circuito.
+  - [resources](proyectoRobotica-v3.0/resources): contiene el [dataset de entrenamiento](proyectoRobotica-v3.0/resources/dataset) del reconocedor de símbolos, las [imágenes de entrenamiento](proyectoRobotica-v3.0/resources/imgs) del segmentador de imágenes y varios [videos](proyectoRobotica-v3.0/resources/videos/) del recorrido del circuito.
   - [symbol-recognition](proyectoRobotica-v3.0/symbol-recognition): contiene una herramienta para generar la base de datos de símbolos y el test estático de los clasificadores.
 ## Ejecutar tests
 Clonar el repositorio:
