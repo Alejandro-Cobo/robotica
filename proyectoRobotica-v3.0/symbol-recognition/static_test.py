@@ -2,11 +2,8 @@ import numpy as np
 import sklearn.neighbors
 import sklearn.cross_validation as cv
 
-import hu_moments as hu
-import mahalanobis
-
-import cv2
-import binarize_image as bin
+from lib import hu_moments as hu
+from lib import mahalanobis
 
 data, labels = hu.get_db()
 loo = cv.LeaveOneOut(len(labels))

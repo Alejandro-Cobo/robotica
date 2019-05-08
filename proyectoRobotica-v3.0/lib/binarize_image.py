@@ -13,7 +13,7 @@ def binarize(labels_seg):
     contList, hier = cv2.findContours(mark,cv2.RETR_LIST,cv2.CHAIN_APPROX_NONE)
     if len(contList) > 0:
             # Elijo el cierre con mayor área
-            cont = contList.index( max(contList, key=lambda x : cv2.contourArea(x)) )
+            cont = contList.index( max(contList, key=lambda x : cv2.contourArea(x[0])) )
             # Pinto el cierre elegido
             cv2.drawContours(img, contList, cont, (255,255,255),cv2.cv.CV_FILLED)
             return img, contList[cont]

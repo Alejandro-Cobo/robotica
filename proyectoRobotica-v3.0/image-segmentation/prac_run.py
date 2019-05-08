@@ -18,12 +18,12 @@ import numpy as np
 import time
 
 # Librerías internas
-import classif as seg
-import analisis
-import geometry as geo
-import symbol_recognition.binarize_image as bin
-import symbol_recognition.hu_moments as hu
-import symbol_recognition.mahalanobis as mahalanobis
+from lib import classif as seg
+from lib import analisis
+from lib import geometry as geo
+from lib import binarize_image as bin
+from lib import hu_moments as hu
+from lib import mahalanobis as mahalanobis
 
 print("Pulsar Espacio para detener el vídeo o 'q' para terminar la ejecución")
 

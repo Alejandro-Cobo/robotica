@@ -4,8 +4,8 @@ from scipy.misc import imread, imsave
 import numpy as np
 import os, os.path
 
-import classif as seg
-import symbol_recognition.binarize_image as bin
+from lib import classif as seg
+from lib import binarize_image as bin
 
 IMG_DB = os.path.abspath("./resources/dataset") + "/"
 VID_DB = os.path.abspath("./resources/videos") + "/"
