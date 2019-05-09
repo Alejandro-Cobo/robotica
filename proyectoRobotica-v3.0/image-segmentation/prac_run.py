@@ -1,52 +1,29 @@
 # coding=UTF-8
-####################################################
-# Esqueleto de programa para ejecutar el algoritmo de segmentacion.
-# Este programa primero entrena el clasificador con los datos de
-#  entrenamiento y luego segmenta el video (este entrenamiento podria
-#  hacerse en "prac_ent.py" y aqui recuperar los parametros del clasificador
-###################################################
-
-# Alejandro Cobo Cabornero, 150333
-# Facundo Navarro Olivera, 140213
-# Diego Sánchez Lizuain, 150072
-
 # Librerías externas
 import cv2
 from scipy.misc import imread, imsave
 from matplotlib import pyplot as plt
 import numpy as np
 import time
+from sklearn import discriminant_analysis as da
 
 # Librerías internas
-from lib import classif as seg
+from lib import tr_img
 from lib import analisis
 from lib import geometry as geo
 from lib import binarize_image as bin
 from lib import hu_moments as hu
 from lib import mahalanobis as mahalanobis
 
-print("Pulsar Espacio para detener el vídeo o 'q' para terminar la ejecución")
+print("Pulsar 'Espacio' para detener el vídeo o 'q' para terminar la ejecución")
 
 start = time.time()
-# Leo las imagenes de entrenamiento
-trImg = imread('resources/imgs/tr_img.png')
-trImgPaint = imread('resources/imgs/tr_img_paint.png')
 
-# Saco todos los puntos marcados en rojo/verde/azul
-data_marca = trImg[np.where(np.all(np.equal(trImgPaint,(255,0,0)),2))]
-data_fondo = trImg[np.where(np.all(np.equal(trImgPaint,(0,255,0)),2))]
-data_linea = trImg[np.where(np.all(np.equal(trImgPaint,(0,0,255)),2))]
-
-labels_marca = np.zeros(data_marca.shape[0],np.int8) + 2
-labels_fondo = np.zeros(data_fondo.shape[0],np.int8)
-labels_linea = np.ones(data_linea.shape[0],np.int8)
-
-data = np.concatenate([data_marca, data_fondo, data_linea])
-data = ((data+0.0) / np.sum(data,1)[:,np.newaxis])[:,:2]
-labels = np.concatenate([labels_marca,labels_fondo, labels_linea])
+# Datos de entrenamiento del segmentador
+data, labels = tr_img.get_tr_img()
 
 # Creo y entreno el segmentador
-seg = seg.segQDA(data, labels)
+seg = da.QuadraticDiscriminantAnalysis().fit(data, labels)
 
 # Creo y entreno el reconocedor de símbolos
 maha = mahalanobis.classifMahalanobis()
@@ -105,7 +82,7 @@ while True:
     im2D = np.reshape(imNp, (imNp.shape[0]*imNp.shape[1],imNp.shape[2]))
     im2D = np.nan_to_num(im2D)
     # Segmento la imagen
-    labels_seg = np.reshape(seg.segmenta(im2D), (imDraw.shape[0], imDraw.shape[1]))
+    labels_seg = np.reshape(seg.predict(im2D), (imDraw.shape[0], imDraw.shape[1]))
     
     # Compruebo si estoy en un cruce
     enCruce = analisis.esCruce(imDraw,labels_seg)
