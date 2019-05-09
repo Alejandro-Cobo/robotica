@@ -20,7 +20,7 @@ print("Pulsar 'Espacio' para detener el vídeo o 'q' para terminar la ejecución
 start = time.time()
 
 # Datos de entrenamiento del segmentador
-data, labels = tr_img.get_tr_img()
+data, labels = tr_img.get_tr_img(True)
 
 # Creo y entreno el segmentador
 seg = da.QuadraticDiscriminantAnalysis().fit(data, labels)
@@ -30,13 +30,13 @@ maha = mahalanobis.classifMahalanobis()
 data, labels = hu.get_db()
 maha.fit(data, labels)
 
-print("Tiempo de entrenamiento: " + str(time.time() - start) + " s.")
+tr_time = time.time() - start
 
 # Lista de símbolos a reconocer
 symbols = ["Cruz", "Escaleras", "Servicio", "Telefono"]
 
-# Inicio la captura de imagenes
-capture = cv2.VideoCapture("resources/videos/dynamic_test_1.mp4")
+# Inicio la captura de imágenes
+capture = cv2.VideoCapture("resources/videos/video2017-4.avi")
 
 # Guardar vídeo
 # fourcc = cv2.cv.CV_FOURCC(*'XVID')
@@ -46,32 +46,29 @@ capture = cv2.VideoCapture("resources/videos/dynamic_test_1.mp4")
 # Contador de frames
 im_count = 0
 # Lista de tiempos de cada iteración del bucle
-times = []
-# Último punto indicado por una flecha en un cruce
-ultimoPSalida = None
+times_seg = []
+times_proc = []
 # Punto en la mitad del último contorno de entrada
-ultimaEntrada = None
+ultima_entrada = None
 # Punto en la mitad del último contorno de salida
-ultimaSalida = None
+ultima_salida = None
+# Último punto indicado por la flecha
+ultimo_pt_flecha = None
 while True:
-    start = time.time()
-
     ret, img = capture.read()
-    
-    # Segmento una de cada dos imágenes
-    im_count = (im_count + 1) % 2
-    if im_count == 0:
-        continue
 
     # Si no hay más imágenes termino el bucle
     if not ret:
         break
     
+    im_count += 1
+    
+    start = time.time()
     # Segemtno solo una parte de la imagen
-    imDraw = img[img.shape[0]/4:,:,:]
+    im_draw = img[img.shape[0]/4:,:,:]
     
     # La pongo en formato numpy
-    imNp = cv2.cvtColor(imDraw, cv2.COLOR_BGR2RGB)
+    imNp = cv2.cvtColor(im_draw, cv2.COLOR_BGR2RGB)
 
     # Segmntación
     # Compute rgb normalization
@@ -79,30 +76,33 @@ while True:
     # Aplico un filtro gaussiano
     imNp = cv2.GaussianBlur(imNp, (0,0), 1)
     # Adapto la imagen al formato de entrada del segmentador
-    im2D = np.reshape(imNp, (imNp.shape[0]*imNp.shape[1],imNp.shape[2]))
-    im2D = np.nan_to_num(im2D)
+    imNp = np.reshape(imNp, (imNp.shape[0]*imNp.shape[1],imNp.shape[2]))
+    imNp = np.nan_to_num(imNp)
     # Segmento la imagen
-    labels_seg = np.reshape(seg.predict(im2D), (imDraw.shape[0], imDraw.shape[1]))
+    labels_seg = np.reshape(seg.predict(imNp), (im_draw.shape[0], im_draw.shape[1]))
+
+    times_seg.append((time.time() - start))
     
-    # Compruebo si estoy en un cruce
-    enCruce = analisis.esCruce(imDraw,labels_seg)
+    start = time.time()
+    # Compruebo si estoy en un cruceq
+    en_cruce = analisis.esCruce(im_draw,labels_seg)
     
     # Busco la flecha si estoy en un cruce
-    if enCruce:
+    if en_cruce:
         cv2.putText(img, "Cruce detectado", (10,20), cv2.FONT_HERSHEY_PLAIN, 1, (0,0,0))
-        pSalida = analisis.get_pSalida(imDraw, labels_seg, ultimoPSalida)
-        ultimoPSalida = pSalida
+        pt_flecha = analisis.get_pt_flecha(im_draw, labels_seg, ultimo_pt_flecha)
+        ultimo_pt_flecha = pt_flecha
     else:
         cv2.putText(img, "Sin cruces", (10,20), cv2.FONT_HERSHEY_PLAIN, 1, (0,0,0))
-        pSalida = None
-        ultimoPSalida = None
+        pt_flecha = None
+        ultimo_pt_flecha = None
 
         # Reconocimiento de símbolos
         # Binarizo la imagen
         imBin, cont = bin.binarize(labels_seg)
         if cont is not None:
             # Visualizar los contornos del símbolo
-            cv2.drawContours(imDraw, cont, -1, (255,0,0))
+            cv2.drawContours(im_draw, cont, -1, (255,0,0))
             # Calculo los momentos de Hu
             hu_moments = hu.get_hu(imBin)
             # Clasifico el símbolo con la distancia de Mahalanobis
@@ -110,28 +110,27 @@ while True:
             cv2.putText(img, symbol,(10,40), cv2.FONT_HERSHEY_PLAIN, 1, (0,0,0))
 
     # Hallo los puntos de la línea en el borde de la imagen
-    bordes = analisis.get_bordes(imDraw,labels_seg)
+    bordes = analisis.get_bordes(im_draw,labels_seg)
 
     # Determino la entrada de la línea
-    entrada = analisis.get_entrada(imDraw, bordes, ultimaEntrada)
-    if entrada == -1:
-        ultimaEntrada = None
-        continue
-    ultimaEntrada = bordes[entrada][len(bordes[entrada])/2]
+    entrada = analisis.get_entrada(im_draw, bordes, ultima_entrada)
     # Punto medio
-    pIn = bordes[entrada][len(bordes[entrada])/2]
+    p_in = bordes[entrada][len(bordes[entrada])/2]
+    ultima_entrada = p_in
     # Visualizar los píxeles de entrada en verde
-    [ cv2.circle(imDraw,tuple(pt),2,(0,255,0),1) for pt in bordes[entrada] ]
+    [ cv2.circle(im_draw,tuple(pt),2,(0,255,0),1) for pt in bordes[entrada] ]
     # Determino la salida de la línea
-    salida = analisis.get_salida(bordes, entrada, pSalida, ultimaSalida)
-    ultimaSalida = None
+    salida = analisis.get_salida(bordes, entrada, pt_flecha, ultima_salida)
+    ultima_salida = None
     if salida != -1:
-        ultimaSalida = bordes[salida][len(bordes[salida])/2]
         # Visualizar los píxeles de salida en rojo
-        [ cv2.circle(imDraw,tuple(pt),2,(0,0,255),1) for pt in bordes[salida] ]
-        pOut = bordes[salida][len(bordes[salida])/2]
+        [ cv2.circle(im_draw,tuple(pt),2,(0,0,255),1) for pt in bordes[salida] ]
+        p_out = bordes[salida][len(bordes[salida])/2]
+        ultima_salida = p_out
         # Visualizar la línea que une la entrada y la salida
-        # cv2.line(imDraw,tuple(pIn),tuple(pOut),(0,0,255,),2)
+        # cv2.line(im_draw,tuple(p_in),tuple(p_out),(0,0,255,),2)
+
+    times_proc.append((time.time() - start))
 
     # Visualizar la segmentación
     # paleta = np.array([[0,0,0],[0,0,255],[255,0,0]],dtype=np.uint8)
@@ -150,15 +149,16 @@ while True:
     # Pulsar Espaco para detener el vídeo o 'q' para terminar la ejecución
     k = cv2.waitKey(1)
     if k == ord(' '):
-        cv2.putText(img, "Video pausado", (10,60), cv2.FONT_HERSHEY_PLAIN, 1, (0,0,0))
+        cv2.putText(img, "Video pausado en el frame {}".format(im_count), (10,60), cv2.FONT_HERSHEY_PLAIN, 1, (0,0,0))
         cv2.imshow("Imagen procesada", img)
         k = cv2.waitKey(0)
     if k == ord('q'):
         break
-    
-    times.append((time.time() - start))
 
 # out.release()
 capture.release()
 cv2.destroyAllWindows()
-print("Tiempo medio de procesado de una imagen: " + str(np.mean(times)) + " s.")
+print("******************** Informe de tiempos ********************")
+print("-- Tiempo de entrenamiento: " + str(tr_time) + " s.")
+print("-- Tiempo medio de segmentación de una imagen: " + str(np.mean(times_seg)) + " s.")
+print("-- Tiempo medio de análisis de una imagen segmentada: " + str(np.mean(times_proc)) + " s.")

@@ -10,37 +10,34 @@ import time
 import lib
 
 class BrainTestNavigator(Brain):
-  # Video capture
+  # Captura de vídeo
   cap = None
-  # Pixel segmentator (QDA)
+  # Segmentador de imágenes (QDA)
   qda = None
-  # Symbol classifier (Mahalanobis distance-based classifier)
+  # Clasificador de iconos (distancia de Mahalanobis)
   maha = None
-  # Save video
+  # Guardar vídeo
   SAVE = False
   out = None
-  # Frame counter
-  im_count = 0
-  # Last exit pointed by an arrow in a crossroad
-  last_arrow = None
-  # Last frame's end of the line
+  # Ültimo punto de la flecha
+  last_arrow_pt = None
+  # Último punto de entrada de la línea
   last_in = None
-  # Last frame's start of the line
+  # Últio punto de salida de la línea
   last_out = None
-
 
   def setup(self):
     self.cap = cv2.VideoCapture(0)
 
-    # Train image segmentator
-    data, labels = lib.classif.get_tr_img()
+    # Entrenar segmentador de imágenes
+    data, labels = lib.tr_img.get_tr_img()
     self.qda = da.QuadraticDiscriminantAnalysis().fit(data, labels)
 
-    # Train symbol classifier
+    # Entrenar clasificador de iconos
     data, labels = lib.hu_moments.get_db()
     self.maha = lib.mahalanobis.classifMahalanobis().fit(data, labels)
 
-    # Save video
+    # Guardar vídeo
     if SAVE:
       width = int( cap.get(cv2.cv.CV_CAP_PROP_FRAME_WIDTH) )
       height = int( cap.get(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT) )
@@ -53,72 +50,68 @@ class BrainTestNavigator(Brain):
     if not ret:
       raise Exception("Cannot capture video.")
 
-    imDraw = img[img.shape[0]/4:,:,:]
-    imNp = cv2.cvtColor(imDraw, cv2.COLOR_BGR2RGB)
+    im_draw = img[img.shape[0]/4:,:,:]
+    im_np = cv2.cvtColor(im_draw, cv2.COLOR_BGR2RGB)
 
-    # Compute rgb normalization
-    imNp = np.rollaxis((np.rollaxis(imNp,2)+0.0)/np.sum(imNp,2),0,3)[:,:,:2]
-    # Apply a gaussian filter
-    imNp = cv2.GaussianBlur(imNp, (0,0), 1)
+    # Normalización RGB
+    im_np = np.rollaxis((np.rollaxis(im_np,2)+0.0)/np.sum(im_np,2),0,3)[:,:,:2]
+    # Filtro gaussiano
+    im_np = cv2.GaussianBlur(im_np, (0,0), 1)
 
-    im2D = np.reshape(imNp, (imNp.shape[0]*imNp.shape[1],imNp.shape[2]))
-    im2D = np.nan_to_num(im2D)
+    im_np = np.reshape(im_np, (im_np.shape[0]*im_np.shape[1],im_np.shape[2]))
+    im_np = np.nan_to_num(im_np)
 
-    labels_seg = np.reshape(seg.predict(im2D), (imDraw.shape[0], imDraw.shape[1]))
+    labels_seg = np.reshape(seg.predict(im_np), (im_draw.shape[0], im_draw.shape[1]))
 
     if SAVE:
-      paleta = np.array([[0,0,0],[0,0,255],[255,0,0]],dtype=np.uint8)
-      im_seg = cv2.cvtColor(paleta[labels_seg],cv2.COLOR_RGB2BGR)
+      palette = np.array([[0,0,0],[0,0,255],[255,0,0]],dtype=np.uint8)
+      im_seg = cv2.cvtColor(palette[labels_seg],cv2.COLOR_RGB2BGR)
       self.out.write(im_seg)
 
-    # Check if robot is in a crossroad
-    cross = analisis.esCruce(imDraw,labels_seg)
+    # Comprobar cruce
+    cross = lib.analisis.esCruce(im_draw,labels_seg)
     
-    # Segment the arrow
+    # Estimar orientación de la flecha
     if cross:
         # cv2.putText(img, "Cruce detectado", (10,20), cv2.FONT_HERSHEY_PLAIN, 1, (0,0,0))
-        out_pt = analisis.get_pSalida(imDraw, labels_seg, last_arrow)
-        last_arrow = out_pt
+        arrow_pt = lib.analisis.get_pSalida(im_draw, labels_seg, last_arrow_pt)
+        last_arrow_pt = arrow_pt
     else:
         # cv2.putText(img, "Sin cruces", (10,20), cv2.FONT_HERSHEY_PLAIN, 1, (0,0,0))
-        out_pt = None
-        last_arrow = None
+        arrow_pt = None
+        last_arrow_pt = None
 
         # Reconocimiento de símbolos
-        # Binarizo la imagen
+        # Binarización de la imagen
         im_bin, cont = bin.binarize(labels_seg)
         if cont is not None:
             # Visualizar los contornos del símbolo
-            # cv2.drawContours(imDraw, cont, -1, (255,0,0))
-            # Calculo los momentos de Hu
+            # cv2.drawContours(im_draw, cont, -1, (255,0,0))
+            # Cálculo de los momentos de Hu
             hu_moments = hu.get_hu(im_bin)
-            # Clasifico el símbolo con la distancia de Mahalanobis
+            # Clasificación del símbolo
             symbol = symbols[ int(maha.predict(hu_moments)) ]
             cv2.putText(img, symbol,(10,40), cv2.FONT_HERSHEY_PLAIN, 1, (0,0,0))
 
-    # Hallo los puntos de la línea en el borde de la imagen
-    bordes = analisis.get_bordes(imDraw,labels_seg)
+    # Estimación de los bordes de la línea
+    borders = lib.analisis.get_bordes(im_draw,labels_seg)
 
-    # Determino la entrada de la línea
-    entrada = analisis.get_entrada(imDraw, bordes, ultimaEntrada)
-    if entrada == -1:
-        ultimaEntrada = None
-        continue
-    ultimaEntrada = bordes[entrada][len(bordes[entrada])/2]
-    # Punto medio
-    pIn = bordes[entrada][len(bordes[entrada])/2]
+    # Estimación de la entrada de la línea
+    border_in = lib.analisis.get_entrada(im_draw, borders, last_in)
+    pt_in = borders[border_in][len(borders[border_in])/2]
+    last_in = pt_in
     # Visualizar los píxeles de entrada en verde
-    # [ cv2.circle(imDraw,tuple(pt),2,(0,255,0),1) for pt in bordes[entrada] ]
-    # Determino la salida de la línea
-    salida = analisis.get_salida(bordes, entrada, out_pt, ultimaSalida)
-    ultimaSalida = None
-    if salida != -1:
-        ultimaSalida = bordes[salida][len(bordes[salida])/2]
+    # [ cv2.circle(im_draw,tuple(pt),2,(0,255,0),1) for pt in borders[border_in] ]
+    # Estimación de la salida de la línea
+    border_out = lib.analisis.get_salida(borders, border_in, arrow_pt, last_out)
+    last_out = None
+    if border_out != -1:
         # Visualizar los píxeles de salida en rojo
-        # [ cv2.circle(imDraw,tuple(pt),2,(0,0,255),1) for pt in bordes[salida] ]
-        pOut = bordes[salida][len(bordes[salida])/2]
+        # [ cv2.circle(im_draw,tuple(pt),2,(0,0,255),1) for pt in borders[border_out] ]
+        pt_out = borders[border_out][len(borders[border_out])/2]
+        last_out = p_out
         # Visualizar la línea que une la entrada y la salida
-        # cv2.line(imDraw,tuple(pIn),tuple(pOut),(0,0,255,),2)
+        # cv2.line(im_draw,tuple(pt_in),tuple(pt_out),(0,0,255,),2)
  
 def INIT(engine):
   assert (engine.robot.requires("range-sensor") and

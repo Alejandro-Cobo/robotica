@@ -3,10 +3,14 @@ import cv2
 from scipy.misc import imread
 import numpy as np
 
-def get_tr_img():
+def get_tr_img(old = False):
     # Leo las imagenes de entrenamiento
-    trImg = imread('resources/imgs/tr_img.png')
-    trImgPaint = imread('resources/imgs/tr_img_paint.png')
+    if old:
+        trImg = imread('resources/imgs/tr_img_old.png')
+        trImgPaint = imread('resources/imgs/tr_img_old_paint.png')
+    else:
+        trImg = imread('resources/imgs/tr_img.png')
+        trImgPaint = imread('resources/imgs/tr_img_paint.png')
 
     # Saco todos los puntos marcados en rojo/verde/azul
     data_marca = trImg[np.where(np.all(np.equal(trImgPaint,(255,0,0)),2))]

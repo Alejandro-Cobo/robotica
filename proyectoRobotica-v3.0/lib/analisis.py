@@ -9,7 +9,7 @@ import geometry as geo
 # Constantes numéricas
 CONT_THRES = 100
 BORD_THRES = 5
-DIST_THRES = 50
+DIST_THRES = 10000
 
 # Devuelve True si hay un cruce o bifurcación y False en otro caso
 def esCruce(im, labels_seg):
@@ -24,7 +24,7 @@ def esCruce(im, labels_seg):
     return nHoles > 2
 
 # Devuelve el píxel del borde de la imagen al que apunta la flecha
-def get_pSalida(im, labels_seg, ultimoPSalida):
+def get_pt_flecha(im, labels_seg, ultimo_pt_flecha):
     pSalida = None
     # Hallo los contornos de la flecha
     markImg = (labels_seg==2).astype(np.uint8)*255
@@ -51,7 +51,7 @@ def get_pSalida(im, labels_seg, ultimoPSalida):
 
         # Calculo los puntos que están situados en los bordes de la imagen
         # según la dirección de la flecha (vector v)
-        v = np.array(p2 -p1)
+        v = np.array(p2-p1)
         if all(v != 0):
             # Al principio supongo que pSalida1 está en el borde derecho y pSalida2 en el izquierdo
             pSalida1 = [im.shape[1]-2, p2[1] + ((im.shape[1]-2-p2[0])*v[1])/(v[0])]
@@ -87,10 +87,14 @@ def get_pSalida(im, labels_seg, ultimoPSalida):
                 pSalida = pSalida1
             else:
                 pSalida = pSalida2
-            if (ultimoPSalida is not None) and (geo.dist(pSalida, ultimoPSalida) > DIST_THRES):
-                pSalida = ultimoPSalida
+
+            if ultimo_pt_flecha is not None and geo.dist(pSalida, ultimo_pt_flecha) > DIST_THRES:
+                pSalida = ultimo_pt_flecha
             # Visualizar la línea que indica la orientación de la flecha
             cv2.line(im,tuple((box[0] + box[2]) / 2),tuple(pSalida),(255,0,0),1)
+        else:
+            # TODO: calcular los puntos de salida cuando el vector v es vertical
+            pSalida = ultimo_pt_flecha
     return pSalida
 
 # Devuelve los píxeles del contorno de la línea que se encuentran 
@@ -146,19 +150,24 @@ def get_entrada(im, bordes, ultimaEntrada):
         # elif pt[1] == yMax[1] and geo.dist(pt, ultimaEntrada) < geo.dist(yMax, ultimaEntrada):
             yMax = pt
             entrada = i
+    if entrada == -1:
+        return ultimaEntrada
     return entrada
 
 # Devuelve el índice de la lista de bordes que repredsentan
 # la salida de lal ínea dado una lista de bordes.
 # Devuelve -1 si está en un cruce y no hay punto de salida
-def get_salida(bordes, entrada, pSalida, ultimaSalida):
+def get_salida(bordes, entrada, pt_flecha, ultima_salida):
     salida = -1
+    # Si solo hay 2 bordes, duevuele el que no es la entrada
     if (len(bordes)==2):
         salida =  (entrada+1)%2
-    elif pSalida is not None:
-        salida = _get_closest_border(bordes, pSalida)
-    elif ultimaSalida is not None:
-        salida = _get_closest_border(bordes, ultimaSalida)
+    # Si la flecha marca un punto, asigna la salida al borde que esté más cerca
+    elif pt_flecha is not None:
+        salida = _get_closest_border(bordes, pt_flecha)
+    # Si no hay flecha, se estima el borde eligiendo el que esté más cerca del último
+    elif ultima_salida is not None:
+        salida = _get_closest_border(bordes, ultima_salida)
     return salida
 
 # Devuelve el índice del borde más cercano al punto p
