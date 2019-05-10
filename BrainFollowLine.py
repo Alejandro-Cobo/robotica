@@ -19,21 +19,21 @@ class BrainTestNavigator(Brain):
   # Guardar vídeo
   SAVE = False
   out = None
-  # Ültimo punto de la flecha
+  # Ültimo punto indicado por la flecha
   last_arrow_pt = None
   # Último punto de entrada de la línea
   last_in = None
-  # Últio punto de salida de la línea
+  # Último punto de salida de la línea
   last_out = None
 
   def setup(self):
     self.cap = cv2.VideoCapture(0)
 
-    # Entrenar segmentador de imágenes
+    # Entrenamiento del segmentador de imágenes
     data, labels = lib.tr_img.get_tr_img()
     self.qda = da.QuadraticDiscriminantAnalysis().fit(data, labels)
 
-    # Entrenar clasificador de iconos
+    # Entrenamiento del clasificador de iconos
     data, labels = lib.hu_moments.get_db()
     self.maha = lib.mahalanobis.classifMahalanobis().fit(data, labels)
 
@@ -68,16 +68,14 @@ class BrainTestNavigator(Brain):
       im_seg = cv2.cvtColor(palette[labels_seg],cv2.COLOR_RGB2BGR)
       self.out.write(im_seg)
 
-    # Comprobar cruce
+    # Comprobación de cruce
     cross = lib.analysis.esCruce(im_draw,labels_seg)
     
-    # Estimar orientación de la flecha
+    # Estimación de la orientación de la flecha
     if cross:
-        # cv2.putText(img, "Cruce detectado", (10,20), cv2.FONT_HERSHEY_PLAIN, 1, (0,0,0))
         arrow_pt = lib.analysis.get_pSalida(im_draw, labels_seg, last_arrow_pt)
         last_arrow_pt = arrow_pt
     else:
-        # cv2.putText(img, "Sin cruces", (10,20), cv2.FONT_HERSHEY_PLAIN, 1, (0,0,0))
         arrow_pt = None
         last_arrow_pt = None
 
@@ -85,13 +83,11 @@ class BrainTestNavigator(Brain):
         # Binarización de la imagen
         im_bin, cont = bin.binarize(labels_seg)
         if cont is not None:
-            # Visualizar los contornos del símbolo
-            # cv2.drawContours(im_draw, cont, -1, (255,0,0))
             # Cálculo de los momentos de Hu
             hu_moments = hu.get_hu(im_bin)
             # Clasificación del símbolo
             symbol = symbols[ int(maha.predict(hu_moments)) ]
-            cv2.putText(img, symbol,(10,40), cv2.FONT_HERSHEY_PLAIN, 1, (0,0,0))
+            # print(symbol)
 
     # Estimación de los bordes de la línea
     borders = lib.analysis.get_bordes(im_draw,labels_seg)
@@ -100,18 +96,14 @@ class BrainTestNavigator(Brain):
     border_in = lib.analysis.get_entrada(im_draw, borders, last_in)
     pt_in = borders[border_in][len(borders[border_in])/2]
     last_in = pt_in
-    # Visualizar los píxeles de entrada en verde
-    # [ cv2.circle(im_draw,tuple(pt),2,(0,255,0),1) for pt in borders[border_in] ]
     # Estimación de la salida de la línea
     border_out = lib.analysis.get_salida(borders, border_in, arrow_pt, last_out)
     last_out = None
     if border_out != -1:
-        # Visualizar los píxeles de salida en rojo
-        # [ cv2.circle(im_draw,tuple(pt),2,(0,0,255),1) for pt in borders[border_out] ]
         pt_out = borders[border_out][len(borders[border_out])/2]
         last_out = p_out
-        # Visualizar la línea que une la entrada y la salida
-        # cv2.line(im_draw,tuple(pt_in),tuple(pt_out),(0,0,255,),2)
+
+    # TODO: consigna de control teniendo en cuenta pt_in y pt_out.
  
 def INIT(engine):
   assert (engine.robot.requires("range-sensor") and
