@@ -15,8 +15,9 @@ DIST_THRES = 10000
 def esCruce(im, labels_seg):
     # Hallo los contornos del fondo ignorando las marcas
     backImg = (labels_seg!=1).astype(np.uint8)*255
-    contList, hier = cv2.findContours(backImg,cv2.RETR_LIST,cv2.CHAIN_APPROX_NONE)
-    contList = [cont for cont in contList if len(cont) > CONT_THRES]
+    _, contList, _ = cv2.findContours(backImg,cv2.RETR_LIST,cv2.CHAIN_APPROX_NONE)
+    contList = [cont[0] for cont in contList if len(cont) > CONT_THRES]
+    print(contList)
     # Visualizar los contornos
     cv2.drawContours(im, contList, -1, (0,0,255))
     # Número de agujeros
@@ -25,10 +26,10 @@ def esCruce(im, labels_seg):
 
 # Devuelve el píxel del borde de la imagen al que apunta la flecha
 def get_pt_flecha(im, labels_seg, ultimo_pt_flecha):
-    pSalida = None
+    pt_flecha = None
     # Hallo los contornos de la flecha
     markImg = (labels_seg==2).astype(np.uint8)*255
-    contList, hier = cv2.findContours(markImg,cv2.RETR_LIST,cv2.CHAIN_APPROX_NONE)
+    _, contList, _ = cv2.findContours(markImg,cv2.RETR_LIST,cv2.CHAIN_APPROX_NONE)
     contList = [cont for cont in contList if len(cont) > CONT_THRES]
     if len(contList) > 0:
         cont = max(contList, key=lambda x : len(x))
@@ -53,20 +54,20 @@ def get_pt_flecha(im, labels_seg, ultimo_pt_flecha):
         # según la dirección de la flecha (vector v)
         v = np.array(p2-p1)
         if all(v != 0):
-            # Al principio supongo que pSalida1 está en el borde derecho y pSalida2 en el izquierdo
-            pSalida1 = [im.shape[1]-2, p2[1] + ((im.shape[1]-2-p2[0])*v[1])/(v[0])]
-            pSalida2 = [0, p1[1] + ((0-p1[0])*v[1])/(v[0])]
+            # Al principio supongo que pt_flecha1 está en el borde derecho y pt_flecha2 en el izquierdo
+            pt_flecha1 = [im.shape[1]-2, p2[1] + ((im.shape[1]-2-p2[0])*v[1])/(v[0])]
+            pt_flecha2 = [0, p1[1] + ((0-p1[0])*v[1])/(v[0])]
             # Los corrijo si se salen de los bordes de la imagen
-            if pSalida1[1] < 0:
-                pSalida1 = [p2[0] + ((0-p2[1])*v[0])/(v[1]), 0]
-            elif pSalida1[1] > im.shape[0] - 2:
-                pSalida1 = [p2[0] + ((im.shape[0] - 2-p2[1])*v[0])/(v[1]), im.shape[0] - 2]
-            if pSalida2[1] < 0:
-                pSalida2 = [p1[0] + ((0-2-p1[1])*v[0])/(v[1]), 0]
-            elif pSalida2[1] > im.shape[0] - 2:
-                pSalida2 = [p1[0] + ((im.shape[0]-2-p1[1])*v[0])/(v[1]), im.shape[0] - 2]
+            if pt_flecha1[1] < 0:
+                pt_flecha1 = [p2[0] + ((0-p2[1])*v[0])/(v[1]), 0]
+            elif pt_flecha1[1] > im.shape[0] - 2:
+                pt_flecha1 = [p2[0] + ((im.shape[0] - 2-p2[1])*v[0])/(v[1]), im.shape[0] - 2]
+            if pt_flecha2[1] < 0:
+                pt_flecha2 = [p1[0] + ((0-2-p1[1])*v[0])/(v[1]), 0]
+            elif pt_flecha2[1] > im.shape[0] - 2:
+                pt_flecha2 = [p1[0] + ((im.shape[0]-2-p1[1])*v[0])/(v[1]), im.shape[0] - 2]
             # Visualizar la línea que une ambos puntos
-            # cv2.line(im,tuple(pSalida1),tuple(pSalida2),(0,0,255))
+            # cv2.line(im,tuple(pt_flecha1),tuple(pt_flecha2),(0,0,255))
 
             # Estimo la orientación de la flecha según qué mitad tenga más área
             markPts = np.argwhere(labels_seg == 2)
@@ -84,32 +85,33 @@ def get_pt_flecha(im, labels_seg, ultimo_pt_flecha):
             # [ cv2.circle(im,tuple(pt),1,(255,0,0)) for pt in mark1 ]
             # [ cv2.circle(im,tuple(pt),1,(0,255,0)) for pt in mark2 ]
             if len(mark1) > len(mark2):
-                pSalida = pSalida1
+                pt_flecha = pt_flecha1
             else:
-                pSalida = pSalida2
+                pt_flecha = pt_flecha2
 
-            if ultimo_pt_flecha is not None and geo.dist(pSalida, ultimo_pt_flecha) > DIST_THRES:
-                pSalida = ultimo_pt_flecha
+            if ultimo_pt_flecha is not None and geo.dist(pt_flecha, ultimo_pt_flecha) > DIST_THRES:
+                pt_flecha = ultimo_pt_flecha
             # Visualizar la línea que indica la orientación de la flecha
-            cv2.line(im,tuple((box[0] + box[2]) / 2),tuple(pSalida),(255,0,0),1)
+            cv2.line(im,tuple((box[0] + box[2]) / 2),tuple(pt_flecha),(255,0,0),1)
         else:
             # TODO: calcular los puntos de salida cuando el vector v es vertical
-            pSalida = ultimo_pt_flecha
-    return pSalida
+            pt_flecha = ultimo_pt_flecha
+    return pt_flecha
 
 # Devuelve los píxeles del contorno de la línea que se encuentran 
 # en los bordes de la imagen
 def get_bordes(im, labels_seg):
     # Hallo los puntos de la línea en el borde de la imagen
     linImg = (labels_seg==1).astype(np.uint8)*255
-    contList, hier = cv2.findContours(linImg,cv2.RETR_LIST,cv2.CHAIN_APPROX_NONE)
+    _, contList, _ = cv2.findContours(linImg,cv2.RETR_LIST,cv2.CHAIN_APPROX_NONE)
     contList = [cont for cont in contList if len(cont) > CONT_THRES]
+    cv2.drawContours(im, contList,-1,(255,0,0),3)
     bordes = []
     for cont in contList:
         found = False
         for pt in cont:
             pt = pt[0]
-            if pt[0] == 1 or pt[0] == im.shape[1]-2 or pt[1] == 1 or pt[1] == im.shape[0]-2:
+            if pt[0] == 0 or pt[0] == im.shape[1]-1 or pt[1] == 0 or pt[1] == im.shape[0]-1:
                 # Visualizar los contornos
                 # cv2.circle(im,tuple(pt),2,(255,0,0))
                 if found:

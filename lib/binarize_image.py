@@ -12,7 +12,7 @@ def binarize(labels_seg):
     # Hallo los píxeles del icono
     mark = (labels_seg==2).astype(np.uint8)*255
     # Hallo los cierres convexos
-    contList, hier = cv2.findContours(mark,cv2.RETR_LIST,cv2.CHAIN_APPROX_NONE)
+    _, contList, _ = cv2.findContours(mark,cv2.RETR_LIST,cv2.CHAIN_APPROX_NONE)
     contList = [cont for cont in contList if len(cont) > CONT_THRES]
     if len(contList) > 0:
             # Elijo el cierre con mayor área

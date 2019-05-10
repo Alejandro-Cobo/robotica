@@ -7,7 +7,12 @@ import numpy as np
 from sklearn import discriminant_analysis as da
 import time
 
-import lib
+from lib import analysis
+from lib import binarize_image
+from lib import geometry
+from lib import hu_moments
+from lib import mahalanobis
+from lib import tr_img
 
 class BrainTestNavigator(Brain):
   # Captura de vídeo
@@ -17,7 +22,7 @@ class BrainTestNavigator(Brain):
   # Clasificador de iconos (distancia de Mahalanobis)
   maha = None
   # Guardar vídeo
-  SAVE = False
+  SAVE = True
   out = None
   # Ültimo punto indicado por la flecha
   last_arrow_pt = None
@@ -30,32 +35,34 @@ class BrainTestNavigator(Brain):
   # Lista de símbolos a reconocer
   symbols = ["Cruz", "Escaleras", "Servicio", "Telefono"]
 
+  width = 0
+
 
   def setup(self):
     self.cap = cv2.VideoCapture(0)
 
     # Entrenamiento del segmentador de imágenes
-    data, labels = lib.tr_img.get_tr_img()
+    data, labels = tr_img.get_tr_img()
     self.qda = da.QuadraticDiscriminantAnalysis().fit(data, labels)
 
     # Entrenamiento del clasificador de iconos
-    data, labels = lib.hu_moments.get_db()
-    self.maha = lib.mahalanobis.classifMahalanobis().fit(data, labels)
+    data, labels = hu_moments.get_db()
+    self.maha = mahalanobis.classifMahalanobis().fit(data, labels)
 
     # Guardar vídeo
-    width = int( cap.get(cv2.cv.CV_CAP_PROP_FRAME_WIDTH) )
-    height = int( cap.get(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT) )
+    self.width = int( self.cap.get(cv2.CAP_PROP_FRAME_WIDTH) )
+    height = int( self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT) )
     if self.SAVE:
-      fourcc = cv2.cv.CV_FOURCC(*'XVID')
-      self.out = cv2.VideoWriter('resources/videos/{}}.avi'.format(time.time()), fourcc, 30, (width,height), True)
+      fourcc = cv2.VideoWriter.fourcc('X','V','I','D')
+      self.out = cv2.VideoWriter('resources/videos/{}.avi'.format(time.time()), fourcc, 30, (self.width,height), True)
 
-    self.MAX_ERROR = width
+    self.MAX_ERROR = self.width
 
   def step(self):
-    ret, img = capture.read()
+    ret, img = self.cap.read()
     
     if not ret:
-      raise Exception("Cannot capture video.")
+      raise Exception("Cannot self.cap video.")
 
     im_draw = img[img.shape[0]/4:,:,:]
     im_np = cv2.cvtColor(im_draw, cv2.COLOR_BGR2RGB)
@@ -76,45 +83,49 @@ class BrainTestNavigator(Brain):
       self.out.write(im_seg)
 
     # Comprobación de cruce
-    cross = lib.analysis.esCruce(im_draw,labels_seg)
+    cross = analysis.esCruce(im_draw,labels_seg)
     
     # Estimación de la orientación de la flecha
     if cross:
-        arrow_pt = lib.analysis.get_pSalida(im_draw, labels_seg, last_arrow_pt)
+        arrow_pt = analysis.get_pt_flecha(im_draw, labels_seg, self.last_arrow_pt)
         self.last_arrow_pt = arrow_pt
     else:
         arrow_pt = None
         self.last_arrow_pt = None
-
         # Reconocimiento de símbolos
         # Binarización de la imagen
-        im_bin, cont = bin.binarize(labels_seg)
+        im_bin, cont = binarize_image.binarize(labels_seg)
         if cont is not None:
             # Cálculo de los momentos de Hu
-            hu_moments = lib.hu.get_hu(im_bin)
+            hu_moments = hu_moments.get_hu(im_bin)
             # Clasificación del símbolo
-            symbol = self.symbols[ int(self.maha.predict(hu_moments)) ]
+            symbol = self.symbols[ self.maha.predict(hu_moments) ]
             # print(symbol)
 
     # Estimación de los bordes de la línea
-    borders = lib.analysis.get_bordes(im_draw, labels_seg)
-
+    borders = analysis.get_bordes(im_draw, labels_seg)
+    
     # Estimación de la entrada de la línea
-    border_in = lib.analysis.get_entrada(im_draw, borders, self.last_in)
+    border_in = analysis.get_entrada(im_draw, borders, self.last_in)
     pt_in = borders[border_in][len(borders[border_in])/2]
+    # Visualizar los píxeles de entrada en verde
+    [ cv2.circle(im_draw,tuple(pt),2,(0,255,0),1) for pt in borders[border_in] ]
     self.last_in = pt_in
     # Estimación de la salida de la línea
-    border_out = lib.analysis.get_salida(borders, border_in, arrow_pt, self.last_out)
+    border_out = analysis.get_salida(borders, border_in, arrow_pt, self.last_out)
     if border_out != -1:
+        # Visualizar los píxeles de salida en rojo
+        [ cv2.circle(im_draw,tuple(pt),2,(0,0,255),1) for pt in borders[border_out] ]
         pt_out = borders[border_out][len(borders[border_out])/2]
-        self.last_out = p_out
+        self.last_out = pt_out
     else:
       self.last_out = None
 
     # TODO: consigna de control teniendo en cuenta pt_in y pt_out.
-    error = pt_out[0] - pt_in[0]
-    TV = error / self.MAX_ERROR
-    FV = max(0, 1-math.abs(TV*1.5))
+    error = self.width/2 - pt_out[0]
+    TV = (error+0.0) / self.MAX_ERROR
+    FV = max(0, 1-abs(TV*1.5))
+    print(FV, TV)
     self.move(FV, TV)
 
 def INIT(engine):

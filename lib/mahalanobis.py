@@ -19,4 +19,4 @@ class classifMahalanobis:
         for i in range(x.shape[0]):
             for j in range(len(self.labels)):
                 distances[i,j] = dst.mahalanobis(x[i],self.means[j],self.invcov[:,:,j])
-        return self.labels[np.argmin(distances, axis=1)]
+        return int(self.labels[np.argmin(distances, axis=1)])
