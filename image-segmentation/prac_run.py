@@ -9,7 +9,7 @@ from sklearn import discriminant_analysis as da
 
 # Librerías internas
 from lib import tr_img
-from lib import analisis
+from lib import analysis
 from lib import geometry as geo
 from lib import binarize_image as bin
 from lib import hu_moments as hu
@@ -20,7 +20,7 @@ print("Pulsar 'Espacio' para detener el vídeo o 'q' para terminar la ejecución
 start = time.time()
 
 # Datos de entrenamiento del segmentador
-data, labels = tr_img.get_tr_img(True)
+data, labels = tr_img.get_tr_img(old=True)
 
 # Creo y entreno el segmentador
 seg = da.QuadraticDiscriminantAnalysis().fit(data, labels)
@@ -85,12 +85,12 @@ while True:
     
     start = time.time()
     # Compruebo si estoy en un cruceq
-    en_cruce = analisis.esCruce(im_draw,labels_seg)
+    en_cruce = analysis.esCruce(im_draw,labels_seg)
     
     # Busco la flecha si estoy en un cruce
     if en_cruce:
         cv2.putText(img, "Cruce detectado", (10,20), cv2.FONT_HERSHEY_PLAIN, 1, (0,0,0))
-        pt_flecha = analisis.get_pt_flecha(im_draw, labels_seg, ultimo_pt_flecha)
+        pt_flecha = analysis.get_pt_flecha(im_draw, labels_seg, ultimo_pt_flecha)
         ultimo_pt_flecha = pt_flecha
     else:
         cv2.putText(img, "Sin cruces", (10,20), cv2.FONT_HERSHEY_PLAIN, 1, (0,0,0))
@@ -110,17 +110,17 @@ while True:
             cv2.putText(img, symbol,(10,40), cv2.FONT_HERSHEY_PLAIN, 1, (0,0,0))
 
     # Hallo los puntos de la línea en el borde de la imagen
-    bordes = analisis.get_bordes(im_draw,labels_seg)
+    bordes = analysis.get_bordes(im_draw,labels_seg)
 
     # Determino la entrada de la línea
-    entrada = analisis.get_entrada(im_draw, bordes, ultima_entrada)
+    entrada = analysis.get_entrada(im_draw, bordes, ultima_entrada)
     # Punto medio
     p_in = bordes[entrada][len(bordes[entrada])/2]
     ultima_entrada = p_in
     # Visualizar los píxeles de entrada en verde
     [ cv2.circle(im_draw,tuple(pt),2,(0,255,0),1) for pt in bordes[entrada] ]
     # Determino la salida de la línea
-    salida = analisis.get_salida(bordes, entrada, pt_flecha, ultima_salida)
+    salida = analysis.get_salida(bordes, entrada, pt_flecha, ultima_salida)
     ultima_salida = None
     if salida != -1:
         # Visualizar los píxeles de salida en rojo

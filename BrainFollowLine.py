@@ -69,12 +69,12 @@ class BrainTestNavigator(Brain):
       self.out.write(im_seg)
 
     # Comprobar cruce
-    cross = lib.analisis.esCruce(im_draw,labels_seg)
+    cross = lib.analysis.esCruce(im_draw,labels_seg)
     
     # Estimar orientación de la flecha
     if cross:
         # cv2.putText(img, "Cruce detectado", (10,20), cv2.FONT_HERSHEY_PLAIN, 1, (0,0,0))
-        arrow_pt = lib.analisis.get_pSalida(im_draw, labels_seg, last_arrow_pt)
+        arrow_pt = lib.analysis.get_pSalida(im_draw, labels_seg, last_arrow_pt)
         last_arrow_pt = arrow_pt
     else:
         # cv2.putText(img, "Sin cruces", (10,20), cv2.FONT_HERSHEY_PLAIN, 1, (0,0,0))
@@ -94,16 +94,16 @@ class BrainTestNavigator(Brain):
             cv2.putText(img, symbol,(10,40), cv2.FONT_HERSHEY_PLAIN, 1, (0,0,0))
 
     # Estimación de los bordes de la línea
-    borders = lib.analisis.get_bordes(im_draw,labels_seg)
+    borders = lib.analysis.get_bordes(im_draw,labels_seg)
 
     # Estimación de la entrada de la línea
-    border_in = lib.analisis.get_entrada(im_draw, borders, last_in)
+    border_in = lib.analysis.get_entrada(im_draw, borders, last_in)
     pt_in = borders[border_in][len(borders[border_in])/2]
     last_in = pt_in
     # Visualizar los píxeles de entrada en verde
     # [ cv2.circle(im_draw,tuple(pt),2,(0,255,0),1) for pt in borders[border_in] ]
     # Estimación de la salida de la línea
-    border_out = lib.analisis.get_salida(borders, border_in, arrow_pt, last_out)
+    border_out = lib.analysis.get_salida(borders, border_in, arrow_pt, last_out)
     last_out = None
     if border_out != -1:
         # Visualizar los píxeles de salida en rojo
