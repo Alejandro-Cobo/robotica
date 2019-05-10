@@ -25,6 +25,11 @@ class BrainTestNavigator(Brain):
   last_in = None
   # Último punto de salida de la línea
   last_out = None
+  # Máximo error posible
+  MAX_ERROR = 0
+  # Lista de símbolos a reconocer
+  symbols = ["Cruz", "Escaleras", "Servicio", "Telefono"]
+
 
   def setup(self):
     self.cap = cv2.VideoCapture(0)
@@ -38,11 +43,13 @@ class BrainTestNavigator(Brain):
     self.maha = lib.mahalanobis.classifMahalanobis().fit(data, labels)
 
     # Guardar vídeo
-    if SAVE:
-      width = int( cap.get(cv2.cv.CV_CAP_PROP_FRAME_WIDTH) )
-      height = int( cap.get(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT) )
+    width = int( cap.get(cv2.cv.CV_CAP_PROP_FRAME_WIDTH) )
+    height = int( cap.get(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT) )
+    if self.SAVE:
       fourcc = cv2.cv.CV_FOURCC(*'XVID')
       self.out = cv2.VideoWriter('resources/videos/{}}.avi'.format(time.time()), fourcc, 30, (width,height), True)
+
+    self.MAX_ERROR = width
 
   def step(self):
     ret, img = capture.read()
@@ -61,9 +68,9 @@ class BrainTestNavigator(Brain):
     im_np = np.reshape(im_np, (im_np.shape[0]*im_np.shape[1],im_np.shape[2]))
     im_np = np.nan_to_num(im_np)
 
-    labels_seg = np.reshape(seg.predict(im_np), (im_draw.shape[0], im_draw.shape[1]))
+    labels_seg = np.reshape(self.qda.predict(im_np), (im_draw.shape[0], im_draw.shape[1]))
 
-    if SAVE:
+    if self.SAVE:
       palette = np.array([[0,0,0],[0,0,255],[255,0,0]],dtype=np.uint8)
       im_seg = cv2.cvtColor(palette[labels_seg],cv2.COLOR_RGB2BGR)
       self.out.write(im_seg)
@@ -74,37 +81,42 @@ class BrainTestNavigator(Brain):
     # Estimación de la orientación de la flecha
     if cross:
         arrow_pt = lib.analysis.get_pSalida(im_draw, labels_seg, last_arrow_pt)
-        last_arrow_pt = arrow_pt
+        self.last_arrow_pt = arrow_pt
     else:
         arrow_pt = None
-        last_arrow_pt = None
+        self.last_arrow_pt = None
 
         # Reconocimiento de símbolos
         # Binarización de la imagen
         im_bin, cont = bin.binarize(labels_seg)
         if cont is not None:
             # Cálculo de los momentos de Hu
-            hu_moments = hu.get_hu(im_bin)
+            hu_moments = lib.hu.get_hu(im_bin)
             # Clasificación del símbolo
-            symbol = symbols[ int(maha.predict(hu_moments)) ]
+            symbol = self.symbols[ int(self.maha.predict(hu_moments)) ]
             # print(symbol)
 
     # Estimación de los bordes de la línea
-    borders = lib.analysis.get_bordes(im_draw,labels_seg)
+    borders = lib.analysis.get_bordes(im_draw, labels_seg)
 
     # Estimación de la entrada de la línea
-    border_in = lib.analysis.get_entrada(im_draw, borders, last_in)
+    border_in = lib.analysis.get_entrada(im_draw, borders, self.last_in)
     pt_in = borders[border_in][len(borders[border_in])/2]
-    last_in = pt_in
+    self.last_in = pt_in
     # Estimación de la salida de la línea
-    border_out = lib.analysis.get_salida(borders, border_in, arrow_pt, last_out)
-    last_out = None
+    border_out = lib.analysis.get_salida(borders, border_in, arrow_pt, self.last_out)
     if border_out != -1:
         pt_out = borders[border_out][len(borders[border_out])/2]
-        last_out = p_out
+        self.last_out = p_out
+    else:
+      self.last_out = None
 
     # TODO: consigna de control teniendo en cuenta pt_in y pt_out.
- 
+    error = pt_out[0] - pt_in[0]
+    TV = error / self.MAX_ERROR
+    FV = max(0, 1-math.abs(TV*1.5))
+    self.move(FV, TV)
+
 def INIT(engine):
   assert (engine.robot.requires("range-sensor") and
 	  engine.robot.requires("continuous-movement"))
