@@ -56,7 +56,7 @@ class BrainTestNavigator(Brain):
     # Normalización RGB
     im_np = np.rollaxis((np.rollaxis(im_np,2)+0.0)/np.sum(im_np,2),0,3)[:,:,:2]
     # Filtro gaussiano
-    im_np = cv2.GaussianBlur(im_np, (0,0), 1)
+    # im_np = cv2.GaussianBlur(im_np, (0,0), 1)
 
     im_np = np.reshape(im_np, (im_np.shape[0]*im_np.shape[1],im_np.shape[2]))
     im_np = np.nan_to_num(im_np)

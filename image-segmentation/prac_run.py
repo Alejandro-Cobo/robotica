@@ -63,18 +63,18 @@ while True:
     
     im_count += 1
     
-    start = time.time()
     # Segemtno solo una parte de la imagen
     im_draw = img[img.shape[0]/4:,:,:]
     
     # La pongo en formato numpy
     imNp = cv2.cvtColor(im_draw, cv2.COLOR_BGR2RGB)
 
+    start = time.time()
     # Segmntación
     # Compute rgb normalization
     imNp = np.rollaxis((np.rollaxis(imNp,2)+0.0)/np.sum(imNp,2),0,3)[:,:,:2]
     # Aplico un filtro gaussiano
-    imNp = cv2.GaussianBlur(imNp, (0,0), 1)
+    # imNp = cv2.GaussianBlur(imNp, (0,0), 1)
     # Adapto la imagen al formato de entrada del segmentador
     imNp = np.reshape(imNp, (imNp.shape[0]*imNp.shape[1],imNp.shape[2]))
     imNp = np.nan_to_num(imNp)
@@ -133,9 +133,9 @@ while True:
     times_proc.append((time.time() - start))
 
     # Visualizar la segmentación
-    # paleta = np.array([[0,0,0],[0,0,255],[255,0,0]],dtype=np.uint8)
-    # imSeg = cv2.cvtColor(paleta[labels_seg],cv2.COLOR_RGB2BGR)
-    # cv2.imshow("Imagen segmentada", imSeg)
+    paleta = np.array([[0,0,0],[0,0,255],[255,0,0]],dtype=np.uint8)
+    imSeg = cv2.cvtColor(paleta[labels_seg],cv2.COLOR_RGB2BGR)
+    cv2.imshow("Imagen segmentada", imSeg)
 
     # Visualizar la binarización de la imagen
     # cv2.imshow("Imagen binarizada", imBin)
