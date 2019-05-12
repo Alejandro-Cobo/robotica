@@ -7,12 +7,7 @@ import numpy as np
 from sklearn import discriminant_analysis as da
 import time
 
-from lib import analysis
-from lib import binarize_image
-from lib import geometry
-from lib import hu_moments
-from lib import mahalanobis
-from lib import tr_img
+from lib import (analysis, binarize_image, geometry, hu_moments, mahalanobis, tr_img)
 
 class BrainTestNavigator(Brain):
   # Captura de vídeo
@@ -35,9 +30,6 @@ class BrainTestNavigator(Brain):
   # Lista de símbolos a reconocer
   symbols = ["Cruz", "Escaleras", "Servicio", "Telefono"]
 
-  width = 0
-
-
   def setup(self):
     self.cap = cv2.VideoCapture(0)
 
@@ -50,13 +42,13 @@ class BrainTestNavigator(Brain):
     self.maha = mahalanobis.classifMahalanobis().fit(data, labels)
 
     # Guardar vídeo
-    self.width = int( self.cap.get(cv2.CAP_PROP_FRAME_WIDTH) )
+    width = int( self.cap.get(cv2.CAP_PROP_FRAME_WIDTH) )
     height = int( self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT) )
     if self.SAVE:
       fourcc = cv2.VideoWriter.fourcc('X','V','I','D')
-      self.out = cv2.VideoWriter('resources/videos/{}.avi'.format(time.time()), fourcc, 30, (self.width,height), True)
+      self.out = cv2.VideoWriter('resources/videos/{}.avi'.format(time.time()), fourcc, 30, (width,height), True)
 
-    self.MAX_ERROR = self.width
+    self.MAX_ERROR = width
 
   def step(self):
     ret, img = self.cap.read()
@@ -76,11 +68,6 @@ class BrainTestNavigator(Brain):
     im_np = np.nan_to_num(im_np)
 
     labels_seg = np.reshape(self.qda.predict(im_np), (im_draw.shape[0], im_draw.shape[1]))
-
-    if self.SAVE:
-      palette = np.array([[0,0,0],[0,0,255],[255,0,0]],dtype=np.uint8)
-      im_seg = cv2.cvtColor(palette[labels_seg],cv2.COLOR_RGB2BGR)
-      self.out.write(im_seg)
 
     # Comprobación de cruce
     cross = analysis.esCruce(im_draw,labels_seg)
@@ -107,10 +94,14 @@ class BrainTestNavigator(Brain):
     
     # Estimación de la entrada de la línea
     border_in = analysis.get_entrada(im_draw, borders, self.last_in)
-    pt_in = borders[border_in][len(borders[border_in])/2]
-    # Visualizar los píxeles de entrada en verde
-    [ cv2.circle(im_draw,tuple(pt),2,(0,255,0),1) for pt in borders[border_in] ]
-    self.last_in = pt_in
+    if border_in != -1:
+        # Visualizar los píxeles de entrada en verde
+        [ cv2.circle(im_draw,tuple(pt),2,(0,255,0),1) for pt in borders[border_in] ]
+        pt_in = borders[border_in][len(borders[border_in])/2]
+        self.last_in = pt_in
+    else:
+        pt_in = self.last_in
+
     # Estimación de la salida de la línea
     border_out = analysis.get_salida(borders, border_in, arrow_pt, self.last_out)
     if border_out != -1:
@@ -119,11 +110,13 @@ class BrainTestNavigator(Brain):
         pt_out = borders[border_out][len(borders[border_out])/2]
         self.last_out = pt_out
     else:
-      self.last_out = None
+        pt_out = self.last_out
 
-    # TODO: consigna de control teniendo en cuenta pt_in y pt_out.
-    error = self.width/2 - pt_out[0]
-    TV = (error+0.0) / self.MAX_ERROR
+    if self.SAVE:
+        self.out.write(img)
+
+    error = self.MAX_ERROR/2 - pt_out[0] + 0.0
+    TV = error / self.MAX_ERROR
     FV = max(0, 1-abs(TV*1.5))
     print(FV, TV)
     self.move(FV, TV)
