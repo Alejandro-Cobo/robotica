@@ -10,7 +10,7 @@ if [ $# -eq 1 ]; then
          rsync -ram -e ssh --include '*/' --include '*.py' --include '*.png' --include '*.jpg' --exclude '*' . robotica@192.168.1.25:myDir
     elif [ $1 -eq 26 ]; then
         echo "Copying files to robotica@192.168.1.26..."
-         rsync -ram -e ssh --include '*/' --include '*.py' --include '*.png' --include '*.jpg' --exclude '*' . robotica@192.168.1.25:myDir
+         rsync -ram -e ssh --include '*/' --include '*.py' --include '*.png' --include '*.jpg' --exclude '*' . robotica@192.168.1.26:myDir
     else
         usage
     fi
