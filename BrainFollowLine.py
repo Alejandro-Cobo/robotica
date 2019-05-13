@@ -53,8 +53,7 @@ class BrainTestNavigator(Brain):
   def step(self):
     ret, img = self.cap.read()
     
-    if not ret:
-      raise Exception("Cannot self.cap video.")
+    assert ret, "Cannot read from video."
 
     im_draw = img[img.shape[0]/4:,:,:]
     im_np = cv2.cvtColor(im_draw, cv2.COLOR_BGR2RGB)

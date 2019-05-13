@@ -8,8 +8,14 @@ FOLDERS = ["cruz","escaleras","servicio","telefono"]
 # Número de imágenes por directorio
 N_IMGS = 100
 
-# Devuelve la base de datos de imágenes convertida a momentos de Hu
 def get_db():
+    """
+    Devuelve la base de datos de imágenes convertida a momentos de Hu.
+
+    Devuelve:
+        numpy.ndarray: matriz con los momentos de Hu.
+        numpy.ndarray: lista de las clases de los datos.
+    """
     data = np.empty((len(FOLDERS)*N_IMGS,7))
     labels = np.empty(len(FOLDERS)*N_IMGS)
 
@@ -23,8 +29,10 @@ def get_db():
 
     return data, labels
 
-# Convierte una imagen binarizada a momentos de Hu
 def get_hu(img):
+    """
+    Convierte una imagen binarizada a momentos de Hu.
+    """
     moments = cv2.moments(img, True)
     return cv2.HuMoments(moments).T
     

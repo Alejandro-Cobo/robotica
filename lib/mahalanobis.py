@@ -2,6 +2,10 @@ import numpy as np
 import scipy.spatial.distance as dst
 
 class classifMahalanobis:
+    """
+    Clase que implementa el clasificador de la distancia de Mahalanobis para el
+    reconocimiento de iconos.
+    """
     def __init__(self):
         pass
     

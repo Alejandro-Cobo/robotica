@@ -3,14 +3,29 @@ import cv2
 from scipy.misc import imread
 import numpy as np
 
+TR_IMG_PATH = "resources/imgs"
+
 def get_tr_img(old = False):
+    """
+    Devuelve dos arrays Numpy con los datos y clases de los píxeles de las
+    imágenes de entrenamiento del segmentador.
+
+    Argumentos:
+        old (boolean): si es True, devuelve los datos de las imágenes de entrenamiento
+            generadas con los vídeos de otros años. Si es False, devuelve los datos de
+            las imágenes del circuito de este año.
+
+    Devuelve:
+        numpy.ndarray: valores RGB normalizados de los píxeles.
+        numpy.ndarray: clases de los datos (0: fondo, 1: línea, 2: marca).
+    """
     # Leo las imagenes de entrenamiento
     if old:
-        trImg = imread('resources/imgs/tr_img_old.png')
-        trImgPaint = imread('resources/imgs/tr_img_old_paint.png')
+        trImg = imread(TR_IMG_PATH + "/tr_img_old.png")
+        trImgPaint = imread( TR_IMG_PATH + "/tr_img_old_paint.png")
     else:
-        trImg = imread('resources/imgs/tr_img.png')
-        trImgPaint = imread('resources/imgs/tr_img_paint.png')
+        trImg = imread(TR_IMG_PATH + "/tr_img.png")
+        trImgPaint = imread(TR_IMG_PATH + "/tr_img_paint.png")
 
     # Saco todos los puntos marcados en rojo/verde/azul
     data_marca = trImg[np.where(np.all(np.equal(trImgPaint,(255,0,0)),2))]

@@ -7,16 +7,25 @@ import numpy as np
 import geometry as geo
 
 # Constantes numéricas
-CONT_THRES = 100
-BORD_THRES = 5
-DIST_THRES = 10000
+CONT_THRESH = 100
+BORD_THRESH = 5
+DIST_THRESH = 10000
 
-# Devuelve True si hay un cruce o bifurcación y False en otro caso
 def esCruce(im, labels_seg):
+    """
+    Devuelve True si hay un cruce o bifurcación y False en otro caso.
+
+    Argumentos:
+        im (numpy.ndarray): imagen de entrada.
+        labels_seg (numpy.ndarray): imagen segmentada.
+
+    Devuelve:
+        bool: True si la imagen representa una bifurcación, False en otro caso.
+    """
     # Hallo los contornos del fondo ignorando las marcas
     backImg = (labels_seg!=1).astype(np.uint8)*255
     _, contList, _ = cv2.findContours(backImg,cv2.RETR_LIST,cv2.CHAIN_APPROX_NONE)
-    contList = [cont[0] for cont in contList if len(cont) > CONT_THRES]
+    contList = [cont[0] for cont in contList if len(cont) > CONT_THRESH]
     print(contList)
     # Visualizar los contornos
     cv2.drawContours(im, contList, -1, (0,0,255))
@@ -24,13 +33,24 @@ def esCruce(im, labels_seg):
     nHoles = len(contList)
     return nHoles > 2
 
-# Devuelve el píxel del borde de la imagen al que apunta la flecha
 def get_pt_flecha(im, labels_seg, ultimo_pt_flecha):
+    """
+    Calcula el píxel del borde de la imagen al que apunta la flecha.
+    
+    Argumentos:
+        im (numpy.ndarray): imagen de entrada.
+        labels_seg (numpy.ndarray): imagen segmentada.
+        ultimo_pt_flecha (list): píxel al que apuntaba la flecha en el frame anterior.
+            None si no había ninguno.
+
+    Devuelve:
+        list: Posición del píxel de los márgenes de la imagen al que apunta la flecha.
+    """
     pt_flecha = None
     # Hallo los contornos de la flecha
     markImg = (labels_seg==2).astype(np.uint8)*255
     _, contList, _ = cv2.findContours(markImg,cv2.RETR_LIST,cv2.CHAIN_APPROX_NONE)
-    contList = [cont for cont in contList if len(cont) > CONT_THRES]
+    contList = [cont for cont in contList if len(cont) > CONT_THRESH]
     if len(contList) > 0:
         cont = max(contList, key=lambda x : len(x))
         # Visualizar los contornos de la flecha
@@ -89,7 +109,8 @@ def get_pt_flecha(im, labels_seg, ultimo_pt_flecha):
             else:
                 pt_flecha = pt_flecha2
 
-            if ultimo_pt_flecha is not None and geo.dist(pt_flecha, ultimo_pt_flecha) > DIST_THRES:
+            if ultimo_pt_flecha is not None and geo.dist(pt_flecha, ultimo_pt_flecha) > DIST_THRESH:
+                assert len(ultimo_pt_flecha) == 2, "len(ultimo_pt_flecha) != 2"
                 pt_flecha = ultimo_pt_flecha
             # Visualizar la línea que indica la orientación de la flecha
             cv2.line(im,tuple((box[0] + box[2]) / 2),tuple(pt_flecha),(255,0,0),1)
@@ -98,13 +119,23 @@ def get_pt_flecha(im, labels_seg, ultimo_pt_flecha):
             pt_flecha = ultimo_pt_flecha
     return pt_flecha
 
-# Devuelve los píxeles del contorno de la línea que se encuentran 
-# en los bordes de la imagen
 def get_bordes(im, labels_seg):
+    """
+    Devuelve los píxeles del contorno de la línea que se encuentran 
+    en los bordes de la imagen.
+
+    Argumentos:
+        im (numpy.ndarray): imagen de entrada.
+        labels_seg (numpy.ndarray): imagen segmentada.
+
+    Devuelve:
+        list: posiciones de los píxeles de la línea que están sobre los márgenes
+            de la imagen.
+    """
     # Hallo los puntos de la línea en el borde de la imagen
     linImg = (labels_seg==1).astype(np.uint8)*255
     _, contList, _ = cv2.findContours(linImg,cv2.RETR_LIST,cv2.CHAIN_APPROX_NONE)
-    contList = [cont for cont in contList if len(cont) > CONT_THRES]
+    contList = [cont for cont in contList if len(cont) > CONT_THRESH]
     cv2.drawContours(im, contList,-1,(255,0,0),3)
     bordes = []
     for cont in contList:
@@ -122,7 +153,7 @@ def get_bordes(im, labels_seg):
 
             else:
                 found = False
-    bordes = [ borde for borde in bordes if len(borde) > BORD_THRES ]
+    bordes = [ borde for borde in bordes if len(borde) > BORD_THRESH ]
 
     if len(bordes) > 0:
         # Caso particular en el que, si un borde se extiende sobre la 
@@ -136,9 +167,23 @@ def get_bordes(im, labels_seg):
 
     return bordes
 
-# Devuelve el índice de la lista de bordes que representan
-# la entrada de lal ínea dado una lista de bordes
 def get_entrada(im, bordes, ultimaEntrada):
+    """
+    Devuelve el índice de la lista de bordes que representan
+    la entrada de la línea dada una lista de bordes.
+
+    Argumentos:
+        im (numpy.ndarray): imagen de entrada.
+        bordes (list): lista de puntos con las posiciones de los píxeles
+            que se encuentran en lso márgenes de la imagen.
+        ultimaEntrada (list): posición del punto en la mitad de la lista de
+            píxeles en el borde de entrada del frame anterior.
+    
+    Devuelve:
+        int: índice de la lista de bordes que indica el borde de entrada, o -1 si
+            no existe.
+
+    """
     entrada = -1
     yMax = [-1,-1]
     for i in range(len(bordes)):
@@ -152,14 +197,27 @@ def get_entrada(im, bordes, ultimaEntrada):
         # elif pt[1] == yMax[1] and geo.dist(pt, ultimaEntrada) < geo.dist(yMax, ultimaEntrada):
             yMax = pt
             entrada = i
-    if entrada == -1:
-        return ultimaEntrada
+    if entrada == -1 and ultimaEntrada is not None:
+        return _get_closest_border(bordes, p)
     return entrada
 
-# Devuelve el índice de la lista de bordes que repredsentan
-# la salida de lal ínea dado una lista de bordes.
-# Devuelve -1 si está en un cruce y no hay punto de salida
 def get_salida(bordes, entrada, pt_flecha, ultima_salida):
+    """
+    Devuelve el índice de la lista de bordes que representan
+    la salida de la línea dada una lista de bordes.
+
+    Argumentos:
+        bordes (list): lista de puntos con las posiciones de los píxeles
+            que se encuentran en lso márgenes de la imagen.
+        pt_flecha (list): posición del píxel en el margen de la imagen al que apunta
+            la flecha, o None si no hay.
+        ultima_salida (list): posición del punto en la mitad de la lista de
+            píxeles en el borde de salida del frame anterior.
+
+    Devuelve:
+        int: índice de la lista de bordes que indica el borde de salida, o -1 si
+            no existe.
+    """
     salida = -1
     # Si solo hay 2 bordes, duevuele el que no es la entrada
     if (len(bordes)==2):
@@ -172,8 +230,10 @@ def get_salida(bordes, entrada, pt_flecha, ultima_salida):
         salida = _get_closest_border(bordes, ultima_salida)
     return salida
 
-# Devuelve el índice del borde más cercano al punto p
 def _get_closest_border(bordes, p):
+    """
+    Devuelve el índice del borde de la lista de bordes más cercano al punto p.
+    """
     minDist = -1
     for i in range(len(bordes)):
         pt = bordes[i][len(bordes[i])/2]
