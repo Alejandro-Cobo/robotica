@@ -1,4 +1,4 @@
-# Práctica de Robótica y percepción computacional
+# Práctica de Robótica y Percepción Computacional
 
 ## Moodle
 Moodle de la asignatura: https://moodle.upm.es/titulaciones/oficiales/course/view.php?id=5810
