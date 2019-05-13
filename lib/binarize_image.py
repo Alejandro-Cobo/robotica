@@ -26,7 +26,7 @@ def binarize(labels_seg):
             # Elijo el cierre con mayor área
             cont = contList.index( max(contList, key=lambda x : cv2.contourArea(x[0])) )
             # Pinto el cierre elegido
-            cv2.drawContours(img, contList, cont, (255,255,255),cv2.cv.CV_FILLED)
+            cv2.drawContours(img, contList, cont, (255,255,255),cv2.FILLED)
             return img, contList[cont]
     else:
             return img, None

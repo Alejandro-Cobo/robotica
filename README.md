@@ -11,6 +11,11 @@ Moodle de la asignatura: https://moodle.upm.es/titulaciones/oficiales/course/vie
   - [resources](proyectoRobotica-v3.0/resources): contiene el [dataset de entrenamiento](resources/dataset) del reconocedor de símbolos, las [imágenes de entrenamiento](resources/imgs) del segmentador de imágenes y varios [videos](resources/videos/) del recorrido del circuito.
   - [symbol-recognition](symbol-recognition): contiene una herramienta para generar la base de datos de símbolos y el test estático de los clasificadores.
 ## Ejecutar tests
+Actualizar OpenCV (la versión de la máquina virtual es antigua):
+```
+sudo apt install python-pip
+pip install opencv-python==3.3.1.11 --user
+```
 Clonar el repositorio:
 ```
 git clone https://github.com/Alejandro-Cobo/Robotica2019

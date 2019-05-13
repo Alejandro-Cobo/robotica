@@ -26,7 +26,6 @@ def esCruce(im, labels_seg):
     backImg = (labels_seg!=1).astype(np.uint8)*255
     _, contList, _ = cv2.findContours(backImg,cv2.RETR_LIST,cv2.CHAIN_APPROX_NONE)
     contList = [cont[0] for cont in contList if len(cont) > CONT_THRESH]
-    print(contList)
     # Visualizar los contornos
     cv2.drawContours(im, contList, -1, (0,0,255))
     # Número de agujeros
@@ -57,7 +56,7 @@ def get_pt_flecha(im, labels_seg, ultimo_pt_flecha):
         cv2.drawContours(im, cont, -1, (255,0,0))
         # Hallo la elipse
         rect = cv2.fitEllipse(cont)
-        box = cv2.cv.BoxPoints(rect)
+        box = cv2.boxPoints(rect)
         box = np.int0(box)
         # Calculo los puntos que definen los ejes de la elipse
         p1 = (box[0] + box[3]) / 2

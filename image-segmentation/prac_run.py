@@ -148,7 +148,7 @@ while True:
     
     # Pulsar Espaco para detener el vídeo o 'q' para terminar la ejecución
     k = cv2.waitKey(1)
-    if k == ord(' '):
+    if k == ord(' '): 
         cv2.putText(img, "Video pausado en el frame {}".format(im_count), (10,60), cv2.FONT_HERSHEY_PLAIN, 1, (0,0,0))
         cv2.imshow("Imagen procesada", img)
         k = cv2.waitKey(0)
