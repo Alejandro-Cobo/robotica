@@ -32,6 +32,11 @@ class BrainTestNavigator(Brain):
 
   def setup(self):
     self.cap = cv2.VideoCapture(0)
+    assert self.cap.isOpened()
+
+    # Ajustar la resolución del vídeo a 320x240
+    self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
+    self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
 
     # Entrenamiento del segmentador de imágenes
     data, labels = tr_img.get_tr_img()
@@ -69,7 +74,7 @@ class BrainTestNavigator(Brain):
     labels_seg = np.reshape(self.qda.predict(im_np), (im_draw.shape[0], im_draw.shape[1]))
 
     # Comprobación de cruce
-    cross = analysis.esCruce(im_draw,labels_seg)
+    cross = analysis.es_cruce(im_draw,labels_seg)
     
     # Estimación de la orientación de la flecha
     if cross:

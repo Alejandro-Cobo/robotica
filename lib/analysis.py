@@ -11,7 +11,7 @@ CONT_THRESH = 100
 BORD_THRESH = 5
 DIST_THRESH = 10000
 
-def esCruce(im, labels_seg):
+def es_cruce(im, labels_seg):
     """
     Devuelve True si hay un cruce o bifurcación y False en otro caso.
 
@@ -25,7 +25,7 @@ def esCruce(im, labels_seg):
     # Hallo los contornos del fondo ignorando las marcas
     backImg = (labels_seg!=1).astype(np.uint8)*255
     _, contList, _ = cv2.findContours(backImg,cv2.RETR_LIST,cv2.CHAIN_APPROX_NONE)
-    contList = [cont[0] for cont in contList if len(cont) > CONT_THRESH]
+    contList = [cont for cont in contList if len(cont) > CONT_THRESH]
     # Visualizar los contornos
     cv2.drawContours(im, contList, -1, (0,0,255))
     # Número de agujeros
@@ -131,18 +131,18 @@ def get_bordes(im, labels_seg):
         list: posiciones de los píxeles de la línea que están sobre los márgenes
             de la imagen.
     """
-    # Hallo los puntos de la línea en el borde de la imagen
     linImg = (labels_seg==1).astype(np.uint8)*255
     _, contList, _ = cv2.findContours(linImg,cv2.RETR_LIST,cv2.CHAIN_APPROX_NONE)
     contList = [cont for cont in contList if len(cont) > CONT_THRESH]
-    cv2.drawContours(im, contList,-1,(255,0,0),3)
+    # Visualizar el contorno de la línea
+    # cv2.drawContours(im, contList,-1,(255,0,0),1)
     bordes = []
     for cont in contList:
         found = False
         for pt in cont:
             pt = pt[0]
             if pt[0] == 0 or pt[0] == im.shape[1]-1 or pt[1] == 0 or pt[1] == im.shape[0]-1:
-                # Visualizar los contornos
+                # Visualizar los bordes
                 # cv2.circle(im,tuple(pt),2,(255,0,0))
                 if found:
                     bordes[-1].append(pt)

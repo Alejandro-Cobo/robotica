@@ -84,8 +84,8 @@ while True:
     times_seg.append((time.time() - start))
     
     start = time.time()
-    # Compruebo si estoy en un cruceq
-    en_cruce = analysis.esCruce(im_draw,labels_seg)
+    # Compruebo si estoy en un cruce
+    en_cruce = analysis.es_cruce(im_draw,labels_seg)
     
     # Busco la flecha si estoy en un cruce
     if en_cruce:
