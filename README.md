@@ -6,6 +6,7 @@ Moodle de la asignatura: https://moodle.upm.es/titulaciones/oficiales/course/vie
 ## Estructura del proyecto:
 - [Documentación de cada módulo](doc).
 - Código fuente:
+  - [brain](brain): simulación de Pyrobot y Brain del robot.
   - [image-segmentation](image-segmentation): test del módulo de procesamiento de imágenes y herramientas para crear imágenes de entrenamiento.
   - [lib](lib): librería con código auxiliar de procesamiento de imágenes y reconocimiento de símbolos.
   - [resources](proyectoRobotica-v3.0/resources): contiene el [dataset de entrenamiento](resources/dataset) del reconocedor de símbolos, las [imágenes de entrenamiento](resources/imgs) del segmentador de imágenes y varios [videos](resources/videos/) del recorrido del circuito.
@@ -26,11 +27,11 @@ cd Robotica2019/
 ```
 Comando para ejecutar la simulación:
 ```
-./runTestLineSim
+brain/runTestLineSim
 ```
 Si no existen permisos de ejecución, utilizar el comando:
 ```
-chmod a+x runTestLineSim
+chmod a+x brain/runTestLineSim
 ```
 Ejecutar la prueba de procesamiento de imágenes:
 ```
