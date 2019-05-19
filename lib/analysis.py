@@ -27,7 +27,7 @@ def es_cruce(im, labels_seg):
     _, contList, _ = cv2.findContours(backImg,cv2.RETR_LIST,cv2.CHAIN_APPROX_NONE)
     contList = [cont for cont in contList if len(cont) > CONT_THRESH]
     # Visualizar los contornos
-    cv2.drawContours(im, contList, -1, (0,0,255))
+    # cv2.drawContours(im, contList, -1, (0,0,255))
     # Número de agujeros
     nHoles = len(contList)
     return nHoles > 2
@@ -53,7 +53,7 @@ def get_pt_flecha(im, labels_seg, ultimo_pt_flecha):
     if len(contList) > 0:
         cont = max(contList, key=lambda x : len(x))
         # Visualizar los contornos de la flecha
-        cv2.drawContours(im, cont, -1, (255,0,0))
+        # cv2.drawContours(im, cont, -1, (255,0,0))
         # Hallo la elipse
         rect = cv2.fitEllipse(cont)
         box = cv2.boxPoints(rect)
@@ -112,7 +112,7 @@ def get_pt_flecha(im, labels_seg, ultimo_pt_flecha):
                 assert len(ultimo_pt_flecha) == 2, "len(ultimo_pt_flecha) != 2"
                 pt_flecha = ultimo_pt_flecha
             # Visualizar la línea que indica la orientación de la flecha
-            cv2.line(im,tuple((box[0] + box[2]) / 2),tuple(pt_flecha),(255,0,0),1)
+            # cv2.line(im,tuple((box[0] + box[2]) / 2),tuple(pt_flecha),(255,0,0),1)
         else:
             # TODO: calcular los puntos de salida cuando el vector v es vertical
             pt_flecha = ultimo_pt_flecha

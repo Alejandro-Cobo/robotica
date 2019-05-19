@@ -35,8 +35,8 @@ class BrainTestNavigator(Brain):
     assert self.cap.isOpened()
 
     # Ajustar la resolución del vídeo a 320x240
-    self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
-    self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
+    self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+    self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 360)
 
     # Entrenamiento del segmentador de imágenes
     data, labels = tr_img.get_tr_img()
@@ -51,9 +51,9 @@ class BrainTestNavigator(Brain):
     height = int( self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT) )
     if self.SAVE:
       fourcc = cv2.VideoWriter.fourcc('X','V','I','D')
-      self.out = cv2.VideoWriter('resources/videos/{}.avi'.format(time.time()), fourcc, 30, (width,height), True)
+      self.out = cv2.VideoWriter('resources/videos/{}.avi'.format(time.time()), fourcc, 5, (width,height), True)
 
-    self.MAX_ERROR = width
+    self.MAX_ERROR = width / 2
 
   def step(self):
     ret, img = self.cap.read()
@@ -85,13 +85,15 @@ class BrainTestNavigator(Brain):
         self.last_arrow_pt = None
         # Reconocimiento de símbolos
         # Binarización de la imagen
+        """
         im_bin, cont = binarize_image.binarize(labels_seg)
         if cont is not None:
             # Cálculo de los momentos de Hu
-            hu_moments = hu_moments.get_hu(im_bin)
+            hu_momnts = hu_moments.get_hu(im_bin)
             # Clasificación del símbolo
-            symbol = self.symbols[ self.maha.predict(hu_moments) ]
+            symbol = self.symbols[ self.maha.predict(hu_momnts) ]
             # print(symbol)
+        """
 
     # Estimación de los bordes de la línea
     borders = analysis.get_bordes(im_draw, labels_seg)
@@ -100,7 +102,7 @@ class BrainTestNavigator(Brain):
     border_in = analysis.get_entrada(im_draw, borders, self.last_in)
     if border_in != -1:
         # Visualizar los píxeles de entrada en verde
-        [ cv2.circle(im_draw,tuple(pt),2,(0,255,0),1) for pt in borders[border_in] ]
+        # [ cv2.circle(im_draw,tuple(pt),2,(0,255,0),1) for pt in borders[border_in] ]
         pt_in = borders[border_in][len(borders[border_in])/2]
         self.last_in = pt_in
     else:
@@ -110,7 +112,7 @@ class BrainTestNavigator(Brain):
     border_out = analysis.get_salida(borders, border_in, arrow_pt, self.last_out)
     if border_out != -1:
         # Visualizar los píxeles de salida en rojo
-        [ cv2.circle(im_draw,tuple(pt),2,(0,0,255),1) for pt in borders[border_out] ]
+        # [ cv2.circle(im_draw,tuple(pt),2,(0,0,255),1) for pt in borders[border_out] ]
         pt_out = borders[border_out][len(borders[border_out])/2]
         self.last_out = pt_out
     else:
@@ -119,11 +121,12 @@ class BrainTestNavigator(Brain):
     if self.SAVE:
         self.out.write(img)
 
-    error = self.MAX_ERROR/2 - pt_out[0] + 0.0
+    error = self.MAX_ERROR - pt_out[0] + 0.0
+    # error = pt_in[0] - pt_out[0] + 0.0
     TV = error / self.MAX_ERROR
-    FV = max(0, 1-abs(TV*1.5))
-    print(FV, TV)
+    FV = min(0.6, max(0, 1-abs(TV*1.5)))
     self.move(FV, TV)
+    print(FV, TV)
 
 def INIT(engine):
   assert (engine.robot.requires("range-sensor") and
