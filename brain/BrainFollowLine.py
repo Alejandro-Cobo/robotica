@@ -89,9 +89,9 @@ class BrainTestNavigator(Brain):
         im_bin, cont = binarize_image.binarize(labels_seg)
         if cont is not None:
             # Cálculo de los momentos de Hu
-            hu_momnts = hu_moments.get_hu(im_bin)
+            hu = hu_moments.get_hu(im_bin)
             # Clasificación del símbolo
-            symbol = self.symbols[ self.maha.predict(hu_momnts) ]
+            symbol = self.symbols[ self.maha.predict(hu) ]
             # print(symbol)
         """
 
