@@ -8,6 +8,8 @@ import time
 from sklearn import discriminant_analysis as da
 
 # Librerías internas
+import os, sys
+sys.path.append(os.getcwd())
 from lib import tr_img
 from lib import analysis
 from lib import geometry as geo

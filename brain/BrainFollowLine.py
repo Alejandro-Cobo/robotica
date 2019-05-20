@@ -7,6 +7,8 @@ import numpy as np
 from sklearn import discriminant_analysis as da
 import time
 
+import os, sys
+sys.path.append(os.getcwd())
 from lib import (analysis, binarize_image, geometry, hu_moments, mahalanobis, tr_img)
 
 class BrainTestNavigator(Brain):
@@ -26,7 +28,7 @@ class BrainTestNavigator(Brain):
   # Último punto de salida de la línea
   last_out = None
   # Máximo error posible
-  MAX_ERROR = 0
+  MAX_ERROR = 0.0
   # Lista de símbolos a reconocer
   symbols = ["Cruz", "Escaleras", "Servicio", "Telefono"]
 
@@ -35,8 +37,8 @@ class BrainTestNavigator(Brain):
     assert self.cap.isOpened()
 
     # Ajustar la resolución del vídeo a 320x240
-    self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-    self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 360)
+    self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
+    self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 180)
 
     # Entrenamiento del segmentador de imágenes
     data, labels = tr_img.get_tr_img()
@@ -60,11 +62,13 @@ class BrainTestNavigator(Brain):
     
     assert ret, "Cannot read from video."
 
-    im_draw = img[img.shape[0]/4:,:,:]
+    im_draw = img
+    # im_draw = img[img.shape[0]/4:,:,:]
     im_np = cv2.cvtColor(im_draw, cv2.COLOR_BGR2RGB)
 
     # Normalización RGB
     im_np = np.rollaxis((np.rollaxis(im_np,2)+0.0)/np.sum(im_np,2),0,3)[:,:,:2]
+    
     # Filtro gaussiano
     # im_np = cv2.GaussianBlur(im_np, (0,0), 1)
 
@@ -78,22 +82,23 @@ class BrainTestNavigator(Brain):
     
     # Estimación de la orientación de la flecha
     if cross:
-        arrow_pt = analysis.get_pt_flecha(im_draw, labels_seg, self.last_arrow_pt)
-        self.last_arrow_pt = arrow_pt
+      arrow_pt = analysis.get_pt_flecha(im_draw, labels_seg, self.last_arrow_pt)
+      self.last_arrow_pt = arrow_pt
     else:
-        arrow_pt = None
-        self.last_arrow_pt = None
-        # Reconocimiento de símbolos
-        # Binarización de la imagen
-        """
-        im_bin, cont = binarize_image.binarize(labels_seg)
-        if cont is not None:
-            # Cálculo de los momentos de Hu
-            hu = hu_moments.get_hu(im_bin)
-            # Clasificación del símbolo
-            symbol = self.symbols[ self.maha.predict(hu) ]
-            # print(symbol)
-        """
+      arrow_pt = None
+      self.last_arrow_pt = None
+      # Reconocimiento de símbolos
+      # Binarización de la imagen
+      im_bin, cont = binarize_image.binarize(labels_seg)
+      if cont is not None:
+          # Cálculo de los momentos de Hu
+          hu = hu_moments.get_hu(im_bin)
+          # Clasificación del símbolo
+          symbol = self.symbols[ self.maha.predict(hu) ]
+          cv2.putText(img, symbol,(10,40), cv2.FONT_HERSHEY_PLAIN, 1, (0,0,0))
+          if symbol == "Cruz":
+            self.move(0,0)
+            return
 
     # Estimación de los bordes de la línea
     borders = analysis.get_bordes(im_draw, labels_seg)
@@ -102,7 +107,7 @@ class BrainTestNavigator(Brain):
     border_in = analysis.get_entrada(im_draw, borders, self.last_in)
     if border_in != -1:
         # Visualizar los píxeles de entrada en verde
-        # [ cv2.circle(im_draw,tuple(pt),2,(0,255,0),1) for pt in borders[border_in] ]
+        [ cv2.circle(im_draw,tuple(pt),2,(0,255,0),1) for pt in borders[border_in] ]
         pt_in = borders[border_in][len(borders[border_in])/2]
         self.last_in = pt_in
     else:
@@ -112,7 +117,7 @@ class BrainTestNavigator(Brain):
     border_out = analysis.get_salida(borders, border_in, arrow_pt, self.last_out)
     if border_out != -1:
         # Visualizar los píxeles de salida en rojo
-        # [ cv2.circle(im_draw,tuple(pt),2,(0,0,255),1) for pt in borders[border_out] ]
+        [ cv2.circle(im_draw,tuple(pt),2,(0,0,255),1) for pt in borders[border_out] ]
         pt_out = borders[border_out][len(borders[border_out])/2]
         self.last_out = pt_out
     else:
@@ -121,12 +126,11 @@ class BrainTestNavigator(Brain):
     if self.SAVE:
         self.out.write(img)
 
-    error = self.MAX_ERROR - pt_out[0] + 0.0
-    # error = pt_in[0] - pt_out[0] + 0.0
+    error = self.MAX_ERROR - pt_out[0]
+    # error = pt_in[0] - pt_out[0]
     TV = error / self.MAX_ERROR
-    FV = min(0.6, max(0, 1-abs(TV*1.5)))
+    FV = min(0.5, max(0, 1-abs(TV*1.5)))
     self.move(FV, TV)
-    print(FV, TV)
 
 def INIT(engine):
   assert (engine.robot.requires("range-sensor") and

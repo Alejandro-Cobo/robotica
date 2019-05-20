@@ -9,7 +9,7 @@ import geometry as geo
 # Constantes numéricas
 CONT_THRESH = 100
 BORD_THRESH = 5
-DIST_THRESH = 10000
+DIST_THRESH = 200000
 
 def es_cruce(im, labels_seg):
     """
@@ -90,32 +90,30 @@ def get_pt_flecha(im, labels_seg, ultimo_pt_flecha):
 
             # Estimo la orientación de la flecha según qué mitad tenga más área
             markPts = np.argwhere(labels_seg == 2)
-            markPts = [ [pt[1],pt[0]] for pt in markPts]
-            mark1 = []
-            mark2 = []
+            mark1 = 0
+            mark2 = 0
             for pt in markPts:
-                sa = geo.sarea(p3,p4,pt)
+                sa = geo.sarea(p3,p4,[pt[1],pt[0]])
                 if sa < 0:
-                    mark1.append(pt)
+                    mark1 += 1
                 elif sa > 0:
-                    mark2.append(pt)
+                    mark2 += 1
 
             # Visualizar las mitades de la flecha
-            # [ cv2.circle(im,tuple(pt),1,(255,0,0)) for pt in mark1 ]
-            # [ cv2.circle(im,tuple(pt),1,(0,255,0)) for pt in mark2 ]
-            if len(mark1) > len(mark2):
+            if mark1 > mark2:
                 pt_flecha = pt_flecha1
             else:
                 pt_flecha = pt_flecha2
 
             if ultimo_pt_flecha is not None and geo.dist(pt_flecha, ultimo_pt_flecha) > DIST_THRESH:
-                assert len(ultimo_pt_flecha) == 2, "len(ultimo_pt_flecha) != 2"
+                print(geo.dist(pt_flecha, ultimo_pt_flecha))
                 pt_flecha = ultimo_pt_flecha
             # Visualizar la línea que indica la orientación de la flecha
-            # cv2.line(im,tuple((box[0] + box[2]) / 2),tuple(pt_flecha),(255,0,0),1)
+            cv2.line(im,tuple((box[0] + box[2]) / 2),tuple(pt_flecha),(255,0,0),1)
         else:
             # TODO: calcular los puntos de salida cuando el vector v es vertical
             pt_flecha = ultimo_pt_flecha
+            
     return pt_flecha
 
 def get_bordes(im, labels_seg):
@@ -197,7 +195,7 @@ def get_entrada(im, bordes, ultimaEntrada):
             yMax = pt
             entrada = i
     if entrada == -1 and ultimaEntrada is not None:
-        return _get_closest_border(bordes, p)
+        return _get_closest_border(bordes, ultimaEntrada)
     return entrada
 
 def get_salida(bordes, entrada, pt_flecha, ultima_salida):
