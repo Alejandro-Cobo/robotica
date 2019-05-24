@@ -9,7 +9,7 @@ import geometry as geo
 # Constantes numéricas
 CONT_THRESH = 100
 BORD_THRESH = 5
-DIST_THRESH = 200000
+DIST_THRESH = 10000
 
 def es_cruce(im, labels_seg):
     """
@@ -88,7 +88,7 @@ def get_pt_flecha(im, labels_seg, ultimo_pt_flecha):
             # Visualizar la línea que une ambos puntos
             # cv2.line(im,tuple(pt_flecha1),tuple(pt_flecha2),(0,0,255))
 
-            # Estimo la orientación de la flecha según qué mitad tenga más área
+            # Estimo la orientación de la flecha según qué mitad tenga más píxeles
             markPts = np.argwhere(labels_seg == 2)
             mark1 = 0
             mark2 = 0
@@ -99,17 +99,15 @@ def get_pt_flecha(im, labels_seg, ultimo_pt_flecha):
                 elif sa > 0:
                     mark2 += 1
 
-            # Visualizar las mitades de la flecha
             if mark1 > mark2:
                 pt_flecha = pt_flecha1
             else:
                 pt_flecha = pt_flecha2
 
             if ultimo_pt_flecha is not None and geo.dist(pt_flecha, ultimo_pt_flecha) > DIST_THRESH:
-                print(geo.dist(pt_flecha, ultimo_pt_flecha))
                 pt_flecha = ultimo_pt_flecha
             # Visualizar la línea que indica la orientación de la flecha
-            cv2.line(im,tuple((box[0] + box[2]) / 2),tuple(pt_flecha),(255,0,0),1)
+            # cv2.line(im,tuple((box[0] + box[2]) / 2),tuple(pt_flecha),(255,0,0),1)
         else:
             # TODO: calcular los puntos de salida cuando el vector v es vertical
             pt_flecha = ultimo_pt_flecha
