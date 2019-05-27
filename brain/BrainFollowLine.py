@@ -12,6 +12,13 @@ sys.path.append(os.getcwd())
 from lib import (analysis, binarize_image, geometry, hu_moments, mahalanobis, tr_img)
 
 class BrainTestNavigator(Brain):
+  # Flag que indica si ha llegado al final del circuito
+  stop = False
+  # Flag que indica si debe esquivar un obstáculo
+  avoid = False
+  # Flag que indica si debe buscar la línea al principio del circuito
+  search_line = True
+
   # Captura de vídeo
   cap = None
   # Segmentador de imágenes (QDA)
@@ -19,7 +26,7 @@ class BrainTestNavigator(Brain):
   # Clasificador de iconos (distancia de Mahalanobis)
   maha = None
   # Guardar vídeo
-  SAVE = True
+  SAVE_VIDEO = True
   out = None
   # Ültimo punto indicado por la flecha
   last_arrow_pt = None
@@ -32,11 +39,14 @@ class BrainTestNavigator(Brain):
   # Lista de símbolos a reconocer
   symbols = ["Cruz", "Escaleras", "Servicio", "Telefono"]
 
+  # Máxima velocidad de avance
+  MAX_SPEED = 0.75
+
   def setup(self):
     self.cap = cv2.VideoCapture(0)
     assert self.cap.isOpened()
 
-    # Ajustar la resolución del vídeo a 320x240
+    # Ajustar la resolución del vídeo a 320 x 180
     self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
     self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 180)
 
@@ -51,7 +61,7 @@ class BrainTestNavigator(Brain):
     # Guardar vídeo
     width = self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)
     height = self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
-    if self.SAVE:
+    if self.SAVE_VIDEO:
       fourcc = cv2.VideoWriter.fourcc('X','V','I','D')
       self.out = cv2.VideoWriter('resources/videos/{}.avi'.format(time.time()), fourcc, 5, (int(width),int(height)), True)
       self.out_seg = cv2.VideoWriter('resources/videos/{}_seg.avi'.format(time.time()), fourcc, 5, (int(width),int(height)), True)
@@ -59,9 +69,14 @@ class BrainTestNavigator(Brain):
     self.MAX_ERROR = width / 2
 
   def step(self):
+    # Quedarse quieto si ha terminado el circuito
+    if self.stop:
+      return
+
+    ############# Segmentación y análisis de imágenes #############
     ret, img = self.cap.read()
     
-    assert ret, "Cannot read from video."
+    assert ret, "Cannot read from video capture."
 
     im_draw = img
     # im_draw = img[img.shape[0]/4:,:,:]
@@ -80,7 +95,7 @@ class BrainTestNavigator(Brain):
 
     # Comprobación de cruce
     cross = analysis.es_cruce(im_draw,labels_seg)
-    
+
     # Estimación de la orientación de la flecha
     if cross:
       arrow_pt = analysis.get_pt_flecha(im_draw, labels_seg, self.last_arrow_pt)
@@ -100,6 +115,7 @@ class BrainTestNavigator(Brain):
           if symbol == "Cruz":
             print("Stop")
             self.move(0,0)
+            self.stop = True
             return
 
     # Estimación de los bordes de la línea
@@ -109,7 +125,7 @@ class BrainTestNavigator(Brain):
     border_in = analysis.get_entrada(im_draw, borders, self.last_in)
     if border_in != -1:
         # Visualizar los píxeles de entrada en verde
-        # [ cv2.circle(im_draw,tuple(pt),2,(0,255,0),1) for pt in borders[border_in] ]
+        [ cv2.circle(im_draw,tuple(pt),2,(0,255,0),1) for pt in borders[border_in] ]
         pt_in = borders[border_in][len(borders[border_in])/2]
         self.last_in = pt_in
     else:
@@ -119,21 +135,32 @@ class BrainTestNavigator(Brain):
     border_out = analysis.get_salida(borders, border_in, arrow_pt, self.last_out)
     if border_out != -1:
         # Visualizar los píxeles de salida en rojo
-        # [ cv2.circle(im_draw,tuple(pt),2,(0,0,255),1) for pt in borders[border_out] ]
+        [ cv2.circle(im_draw,tuple(pt),2,(0,0,255),1) for pt in borders[border_out] ]
         pt_out = borders[border_out][len(borders[border_out])/2]
         self.last_out = pt_out
     else:
         pt_out = self.last_out
 
-    if self.SAVE:
+    if self.SAVE_VIDEO:
         paleta = np.array([[0,0,0],[0,0,255],[255,0,0]],dtype=np.uint8)
         imSeg = cv2.cvtColor(paleta[labels_seg],cv2.COLOR_RGB2BGR)
         self.out.write(img)
         self.out_seg.write(imSeg)
 
+    # Buscar la línea
+    if (pt_in is None or pt_out is None) and self.search_line:
+      print("Searching line...")
+      self.move(self.MAX_SPEED, 0)
+      return
+
+    elif self.search_line:
+      print("Line found.")
+      self.search_line = False
+
+    ############# Consigna de control #############
     error = self.MAX_ERROR - pt_out[0]
     TV = error / self.MAX_ERROR
-    FV = min(0.75, max(0, 1-abs(TV)))
+    FV = min(self.MAX_SPEED, max(0, 1-abs(TV)))
     print(FV, TV)
     self.move(FV, TV)
 

@@ -7,9 +7,11 @@ import numpy as np
 import time
 from sklearn import discriminant_analysis as da
 
-# Librerías internas
+# Para usar las librerías internas
 import os, sys
 sys.path.append(os.getcwd())
+
+# Librerías internas
 from lib import tr_img
 from lib import analysis
 from lib import geometry as geo
@@ -22,7 +24,7 @@ print("Pulsar 'Espacio' para detener el vídeo o 'q' para terminar la ejecución
 start = time.time()
 
 # Datos de entrenamiento del segmentador
-data, labels = tr_img.get_tr_img(old=True)
+data, labels = tr_img.get_tr_img()
 
 # Creo y entreno el segmentador
 seg = da.QuadraticDiscriminantAnalysis().fit(data, labels)
@@ -38,7 +40,7 @@ tr_time = time.time() - start
 symbols = ["Cruz", "Escaleras", "Servicio", "Telefono"]
 
 # Inicio la captura de imágenes
-capture = cv2.VideoCapture("resources/videos/video2017-4.avi")
+capture = cv2.VideoCapture("resources/videos/1558713510.44.avi")
 
 # Guardar vídeo
 # fourcc = cv2.cv.CV_FOURCC(*'XVID')
@@ -101,12 +103,12 @@ while True:
 
         # Reconocimiento de símbolos
         # Binarizo la imagen
-        imBin, cont = bin.binarize(labels_seg)
+        img_bin, cont = bin.binarize(labels_seg)
         if cont is not None:
             # Visualizar los contornos del símbolo
             cv2.drawContours(im_draw, cont, -1, (255,0,0))
             # Calculo los momentos de Hu
-            hu_moments = hu.get_hu(imBin)
+            hu_moments = hu.get_hu(img_bin)
             # Clasifico el símbolo con la distancia de Mahalanobis
             symbol = symbols[ int(maha.predict(hu_moments)) ]
             cv2.putText(img, symbol,(10,40), cv2.FONT_HERSHEY_PLAIN, 1, (0,0,0))
@@ -136,11 +138,11 @@ while True:
 
     # Visualizar la segmentación
     paleta = np.array([[0,0,0],[0,0,255],[255,0,0]],dtype=np.uint8)
-    imSeg = cv2.cvtColor(paleta[labels_seg],cv2.COLOR_RGB2BGR)
-    cv2.imshow("Imagen segmentada", imSeg)
+    img_seg = cv2.cvtColor(paleta[labels_seg],cv2.COLOR_RGB2BGR)
+    cv2.imshow("Imagen segmentada", img_seg)
 
     # Visualizar la binarización de la imagen
-    # cv2.imshow("Imagen binarizada", imBin)
+    # cv2.imshow("Imagen binarizada", img_bin)
 
     # Visualizar el análisis
     cv2.imshow("Imagen procesada", img)

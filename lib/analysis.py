@@ -107,7 +107,7 @@ def get_pt_flecha(im, labels_seg, ultimo_pt_flecha):
             if ultimo_pt_flecha is not None and geo.dist(pt_flecha, ultimo_pt_flecha) > DIST_THRESH:
                 pt_flecha = ultimo_pt_flecha
             # Visualizar la línea que indica la orientación de la flecha
-            # cv2.line(im,tuple((box[0] + box[2]) / 2),tuple(pt_flecha),(255,0,0),1)
+            cv2.line(im,tuple((box[0] + box[2]) / 2),tuple(pt_flecha),(255,0,0),1)
         else:
             # TODO: calcular los puntos de salida cuando el vector v es vertical
             pt_flecha = ultimo_pt_flecha
