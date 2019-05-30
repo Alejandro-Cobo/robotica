@@ -64,5 +64,3 @@ p2 = np.array(p12[1]+(1,))
 l2 = np.cross(p1,p2)
 p = np.array(p12)
 plt.plot(p[:,0],p[:,1],'g-')
-
-

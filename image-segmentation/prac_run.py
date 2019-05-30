@@ -24,7 +24,7 @@ print("Pulsar 'Espacio' para detener el vídeo o 'q' para terminar la ejecución
 start = time.time()
 
 # Datos de entrenamiento del segmentador
-data, labels = tr_img.get_tr_img()
+data, labels = tr_img.get_tr_data()
 
 # Creo y entreno el segmentador
 seg = da.QuadraticDiscriminantAnalysis().fit(data, labels)
@@ -40,7 +40,7 @@ tr_time = time.time() - start
 symbols = ["Cruz", "Escaleras", "Servicio", "Telefono"]
 
 # Inicio la captura de imágenes
-capture = cv2.VideoCapture("resources/videos/1558713510.44.avi")
+capture = cv2.VideoCapture("resources/videos/1558971333.62.avi")
 
 # Guardar vídeo
 # fourcc = cv2.cv.CV_FOURCC(*'XVID')
@@ -68,7 +68,8 @@ while True:
     im_count += 1
     
     # Segemtno solo una parte de la imagen
-    im_draw = img[img.shape[0]/4:,:,:]
+    im_draw = img
+    # im_draw = img[img.shape[0]/4:,:,:]
     
     # La pongo en formato numpy
     imNp = cv2.cvtColor(im_draw, cv2.COLOR_BGR2RGB)
@@ -145,13 +146,13 @@ while True:
     # cv2.imshow("Imagen binarizada", img_bin)
 
     # Visualizar el análisis
-    cv2.imshow("Imagen procesada", img)
+    # cv2.imshow("Imagen procesada", img)
 
     # Guardo el vídeo mostrado por pantalla
     # out.write(img)
     
     # Pulsar Espaco para detener el vídeo o 'q' para terminar la ejecución
-    k = cv2.waitKey(1)
+    k = cv2.waitKey(170)
     if k == ord(' '): 
         cv2.putText(img, "Video pausado en el frame {}".format(im_count), (10,60), cv2.FONT_HERSHEY_PLAIN, 1, (0,0,0))
         cv2.imshow("Imagen procesada", img)

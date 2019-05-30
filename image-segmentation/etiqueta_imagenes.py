@@ -19,7 +19,7 @@ key = 0
 while key != ord('q'):
     ret, imNp = capture.read()
     cv2.imshow('Captura',imNp)
-    key = cv2.waitKey(50)
+    key = cv2.waitKey(150)
 
 capture.release()
 cv2.destroyWindow("Captura")
@@ -38,5 +38,5 @@ plt.imshow(markImg)
 plt.show()
 
 # Si deseas guardar alguna imagen ....
-imsave('resources/imgs/tr_img2.png',imNp)
-imsave('resources/imgs/tr_img_paint2.png',markImg)
+imsave('resources/imgs/img.png',imNp)
+imsave('resources/imgs/img-paint.png',markImg)

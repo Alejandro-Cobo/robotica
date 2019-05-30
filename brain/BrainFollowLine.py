@@ -26,7 +26,7 @@ class BrainTestNavigator(Brain):
   # Clasificador de iconos (distancia de Mahalanobis)
   maha = None
   # Guardar vídeo
-  SAVE_VIDEO = True
+  SAVE_VIDEO = False
   out = None
   # Ültimo punto indicado por la flecha
   last_arrow_pt = None
@@ -40,7 +40,7 @@ class BrainTestNavigator(Brain):
   symbols = ["Cruz", "Escaleras", "Servicio", "Telefono"]
 
   # Máxima velocidad de avance
-  MAX_SPEED = 0.75
+  MAX_SPEED = 0.7
 
   def setup(self):
     self.cap = cv2.VideoCapture(0)
@@ -51,7 +51,7 @@ class BrainTestNavigator(Brain):
     self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 180)
 
     # Entrenamiento del segmentador de imágenes
-    data, labels = tr_img.get_tr_img()
+    data, labels = tr_img.get_tr_data()
     self.qda = da.QuadraticDiscriminantAnalysis().fit(data, labels)
 
     # Entrenamiento del clasificador de iconos
@@ -111,10 +111,12 @@ class BrainTestNavigator(Brain):
           hu = hu_moments.get_hu(im_bin)
           # Clasificación del símbolo
           symbol = self.symbols[ self.maha.predict(hu) ]
-          # cv2.putText(img, symbol,(10,40), cv2.FONT_HERSHEY_PLAIN, 1, (0,0,0))
+          # Visualizar el símbolo reconocido
+          cv2.putText(img, symbol,(10,40), cv2.FONT_HERSHEY_PLAIN, 1, (0,0,0))
+          print(symbol)
           if symbol == "Cruz":
             print("Stop")
-            self.move(0,0)
+            self.move(0, 0)
             self.stop = True
             return
 
@@ -146,6 +148,29 @@ class BrainTestNavigator(Brain):
         imSeg = cv2.cvtColor(paleta[labels_seg],cv2.COLOR_RGB2BGR)
         self.out.write(img)
         self.out_seg.write(imSeg)
+    
+    front = min([s.distance() for s in self.robot.range["front"]])   
+    if front < 0.1:
+       self.avoid = True
+       self.move(0, 1)
+       return
+
+    if self.avoid:
+      distances = [self.robot.range[5].distance(), self.robot.range[6].distance(), self.robot.range[7].distance()]
+      dist = min(distances)
+      print("dist: " + str(dist))
+      error = 1 - dist
+      print("error: " + str(error))
+      if error < 0:
+        error /= 3
+      TV = error
+      FV = min(self.MAX_SPEED, max(0, 1-abs(TV*2)))
+      print(FV, TV)
+      self.move(FV, TV)
+      return
+
+    self.move(self.MAX_SPEED, 0)
+    return
 
     # Buscar la línea
     if (pt_in is None or pt_out is None) and self.search_line:
@@ -156,6 +181,9 @@ class BrainTestNavigator(Brain):
     elif self.search_line:
       print("Line found.")
       self.search_line = False
+
+    elif pt_out is None:
+      self.move()
 
     ############# Consigna de control #############
     error = self.MAX_ERROR - pt_out[0]

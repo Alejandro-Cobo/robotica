@@ -223,6 +223,9 @@ def get_salida(bordes, entrada, pt_flecha, ultima_salida):
     # Si no hay flecha, se estima el borde eligiendo el que esté más cerca del último
     elif ultima_salida is not None:
         salida = _get_closest_border(bordes, ultima_salida)
+
+    if salida == entrada:
+        salida = -1
     return salida
 
 def _get_closest_border(bordes, p):
@@ -230,6 +233,7 @@ def _get_closest_border(bordes, p):
     Devuelve el índice del borde de la lista de bordes más cercano al punto p.
     """
     minDist = -1
+    salida = -1
     for i in range(len(bordes)):
         pt = bordes[i][len(bordes[i])/2]
         d = geo.dist(pt, p)
@@ -237,3 +241,4 @@ def _get_closest_border(bordes, p):
             salida = i
             minDist = d
     return salida
+    

@@ -30,3 +30,4 @@ def binarize(labels_seg):
             return img, contList[cont]
     else:
             return img, None
+            

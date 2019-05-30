@@ -2,10 +2,11 @@
 import cv2
 from scipy.misc import imread, imsave
 import numpy as np
+from sklearn import discriminant_analysis as da
 import os, os.path
 
-from lib import classif as seg
 from lib import binarize_image as bin
+from lib import tr_img
 
 IMG_DB = os.path.abspath("./resources/dataset") + "/"
 VID_DB = os.path.abspath("./resources/videos") + "/"
@@ -24,22 +25,8 @@ def add_db_image(img, folder):
     cv2.imwrite(IMG_DB + folder + "/img%03d.jpg" % save_im_count, img)
     print("Saved image: " + IMG_DB + folder + "/img%03d.jpg" % save_im_count)
 
-imNp = imread('resources/imgs/tr_img.png')
-markImg = imread('resources/imgs/tr_img_paint.png')
-
-data_marca = imNp[np.where(np.all(np.equal(markImg,(255,0,0)),2))]
-data_fondo = imNp[np.where(np.all(np.equal(markImg,(0,255,0)),2))]
-data_linea = imNp[np.where(np.all(np.equal(markImg,(0,0,255)),2))]
-
-labels_marca = np.zeros(data_marca.shape[0],np.int8) + 2
-labels_fondo = np.zeros(data_fondo.shape[0],np.int8)
-labels_linea = np.ones(data_linea.shape[0],np.int8)
-
-data = np.concatenate([data_marca, data_fondo, data_linea])
-data = ((data+0.0) / np.sum(data,1)[:,np.newaxis])[:,:2]
-labels = np.concatenate([labels_marca,labels_fondo, labels_linea])
-
-seg = seg.segQDA(data, labels)
+data, labels = tr_img.get_tr_data()
+seg = da.QuadraticDiscriminantAnalysis().fit(data, labels)
 
 folders = ["cruz","escaleras","servicio","telefono"]
 print("Folders:")
@@ -70,17 +57,17 @@ while True:
     try:
         imNp = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         imNp = np.rollaxis((np.rollaxis(imNp,2)+0.0)/np.sum(imNp,2),0,3)[:,:,:2]
-        imNp = cv2.GaussianBlur(imNp, (0,0), 1)
+        # imNp = cv2.GaussianBlur(imNp, (0,0), 1)
         im2D = np.reshape(imNp, (imNp.shape[0]*imNp.shape[1],imNp.shape[2]))
-        labels_seg = np.reshape(seg.segmenta(im2D), (img.shape[0], img.shape[1]))
+        labels_seg = np.reshape(seg.predict(im2D), (img.shape[0], img.shape[1]))
     except:
         continue
     
-    img = bin.binarize(img, labels_seg)
+    img, _ = bin.binarize(labels_seg)
     if img is None:
         continue
     
-    cv2.imshow(video, img)
+    cv2.imshow("Video", img)
     
     k = cv2.waitKey(1)
     if k == ord(' '):

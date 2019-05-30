@@ -67,4 +67,3 @@ def select_fg_bg(img, radio=2):
     pygame.quit()
 
     return(cv2.cvtColor(imgOut[:,:,:3],cv2.COLOR_BGR2RGB))
-

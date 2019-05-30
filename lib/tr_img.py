@@ -7,7 +7,7 @@ import os, glob
 TR_IMG_PATH = "resources/imgs/train/"
 PAINT_IMG_PATH = "resources/imgs/paint/"
 
-def get_tr_img():
+def get_tr_data():
     """
     Devuelve dos arrays Numpy con los datos y clases de los píxeles de las
     imágenes de entrenamiento del segmentador.
@@ -16,9 +16,7 @@ def get_tr_img():
         numpy.ndarray: valores RGB normalizados de los píxeles.
         numpy.ndarray: clases de los datos (0: fondo, 1: línea, 2: marca).
     """
-    # Leo las imagenes de entrenamiento
-    # tr_img = [cv2.imread(file,cv2.IMREAD_GRAYSCALE) for file in glob.glob(TR_IMG_PATH+ "/*.png")]
-    # paint_img = [cv2.imread(file,cv2.IMREAD_GRAYSCALE) for file in glob.glob(PAINT_IMG_PATH+ "/*.png")]
+    # Leo las imágenes de entrenamiento
     tr_img_names = sorted([file for file in glob.glob(os.path.join(TR_IMG_PATH, '*.png'))])
     paint_img_names = sorted([file for file in glob.glob(os.path.join(PAINT_IMG_PATH, '*.png'))])
     tr_img = [imread(name) for name in tr_img_names]
@@ -37,12 +35,13 @@ def get_tr_img():
 
         if data is None:
             data = np.concatenate([data_marca, data_fondo, data_linea])
-            # data = ((data+0.0) / np.sum(data,1)[:,np.newaxis])[:,:2]
+            data = ((data+0.0) / np.sum(data,1)[:,np.newaxis])[:,:2]
             labels = np.concatenate([labels_marca,labels_fondo, labels_linea])
         else:
             norm = np.concatenate([data_marca, data_fondo, data_linea])
-            # norm = ((norm+0.0) / np.sum(norm,1)[:,np.newaxis])[:,:2]
+            norm = ((norm+0.0) / np.sum(norm,1)[:,np.newaxis])[:,:2]
             data = np.concatenate([data, norm])
             labels = np.concatenate([labels, labels_marca,labels_fondo, labels_linea])
-    data = ((data+0.0) / np.sum(data,1)[:,np.newaxis])[:,:2]
+    # data = ((data+0.0) / np.sum(data,1)[:,np.newaxis])[:,:2]
     return data, labels
+    
