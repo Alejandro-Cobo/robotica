@@ -112,10 +112,9 @@ class BrainTestNavigator(Brain):
           # Clasificación del símbolo
           symbol = self.symbols[ self.maha.predict(hu) ]
           # Visualizar el símbolo reconocido
-          cv2.putText(img, symbol,(10,40), cv2.FONT_HERSHEY_PLAIN, 1, (0,0,0))
+          # cv2.putText(img, symbol,(10,40), cv2.FONT_HERSHEY_PLAIN, 1, (0,0,0))
           print(symbol)
           if symbol == "Cruz":
-            print("Stop")
             self.move(0, 0)
             self.stop = True
             return
@@ -127,7 +126,7 @@ class BrainTestNavigator(Brain):
     border_in = analysis.get_entrada(im_draw, borders, self.last_in)
     if border_in != -1:
         # Visualizar los píxeles de entrada en verde
-        [ cv2.circle(im_draw,tuple(pt),2,(0,255,0),1) for pt in borders[border_in] ]
+        # [ cv2.circle(im_draw,tuple(pt),2,(0,255,0),1) for pt in borders[border_in] ]
         pt_in = borders[border_in][len(borders[border_in])/2]
         self.last_in = pt_in
     else:
@@ -137,59 +136,59 @@ class BrainTestNavigator(Brain):
     border_out = analysis.get_salida(borders, border_in, arrow_pt, self.last_out)
     if border_out != -1:
         # Visualizar los píxeles de salida en rojo
-        [ cv2.circle(im_draw,tuple(pt),2,(0,0,255),1) for pt in borders[border_out] ]
+        # [ cv2.circle(im_draw,tuple(pt),2,(0,0,255),1) for pt in borders[border_out] ]
         pt_out = borders[border_out][len(borders[border_out])/2]
         self.last_out = pt_out
     else:
         pt_out = self.last_out
 
+    hasLine = pt_out is not None
+
+    # Guardar vídeo
     if self.SAVE_VIDEO:
         paleta = np.array([[0,0,0],[0,0,255],[255,0,0]],dtype=np.uint8)
         imSeg = cv2.cvtColor(paleta[labels_seg],cv2.COLOR_RGB2BGR)
         self.out.write(img)
         self.out_seg.write(imSeg)
+
+    ############# Consignas de control #############
+    # Buscar la línea
+    if not hasLine and self.search_line:
+      self.move(self.MAX_SPEED, 0)
+      return
+
+    elif self.search_line:
+      self.search_line = False
     
+    # Esquivar obstáculos
     front = min([s.distance() for s in self.robot.range["front"]])   
-    if front < 0.1:
+    if front < 0.2:
        self.avoid = True
        self.move(0, 1)
        return
 
     if self.avoid:
-      distances = [self.robot.range[5].distance(), self.robot.range[6].distance(), self.robot.range[7].distance()]
-      dist = min(distances)
-      print("dist: " + str(dist))
-      error = 1 - dist
-      print("error: " + str(error))
+      if hasLine:
+        self.avoid = False
+        return
+      dist = min([s.distance() for s in self.robot.range["front-right"]])
+      if dist == 0:
+        self.move(-self.MAX_SPEED, 0)
+        return
+      error = 0.1 - dist
       if error < 0:
         error /= 3
-      TV = error
-      FV = min(self.MAX_SPEED, max(0, 1-abs(TV*2)))
-      print(FV, TV)
+      else:
+        error /= 0.1
+      TV = max(-1, error)
+      FV = min(self.MAX_SPEED, max(0, 1-abs(TV)))
       self.move(FV, TV)
       return
-
-    self.move(self.MAX_SPEED, 0)
-    return
-
-    # Buscar la línea
-    if (pt_in is None or pt_out is None) and self.search_line:
-      print("Searching line...")
-      self.move(self.MAX_SPEED, 0)
-      return
-
-    elif self.search_line:
-      print("Line found.")
-      self.search_line = False
-
-    elif pt_out is None:
-      self.move()
-
-    ############# Consigna de control #############
+    
+    # Seguir la línea
     error = self.MAX_ERROR - pt_out[0]
     TV = error / self.MAX_ERROR
     FV = min(self.MAX_SPEED, max(0, 1-abs(TV)))
-    print(FV, TV)
     self.move(FV, TV)
 
 def INIT(engine):
